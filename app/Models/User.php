@@ -19,6 +19,9 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'account_id',
+        'role',
+        'permissions',
         'email',
         'password',
     ];
@@ -43,6 +46,16 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'permissions' => 'array',
         ];
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        if ($this->role === 'admin') {
+            return true;
+        }
+
+        return in_array($permission, $this->permissions ?? []);
     }
 }

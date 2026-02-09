@@ -16,6 +16,14 @@
             <!-- Header -->
             @include('partials.header')
 
+            <div class="px-4 sm:px-6 lg:px-8 py-4 flex justify-end">
+                 <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="text-sm text-red-600 hover:text-red-800 font-medium">Logout</button>
+                </form>
+            </div>
+
+
             <main class="grow">
                 <div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
                     @yield('content')
