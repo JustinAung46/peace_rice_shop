@@ -25,11 +25,35 @@ class InventoryController extends Controller
             'name' => 'required|string|max:255',
             'sku' => 'nullable|string|unique:products',
             'current_selling_price' => 'required|numeric|min:0',
+            'price_per_pyi' => 'nullable|numeric|min:0',
         ]);
 
         Product::create($validated);
 
         return redirect()->route('inventory.index')->with('success', 'Product created successfully.');
+    }
+
+    public function edit(Product $product)
+    {
+        // Route binding will automatically fetch the product by ID
+        // Route::resource('inventory', ...) expects {inventory} parameter, which defaults to 'inventory' => Product model if type hinted
+        // But since standard resource param is singular of resource name, let's verify if we need to be explicit.
+        // Usually Laravel automatically resolves it.
+        return view('inventory.edit', compact('product'));
+    }
+
+    public function update(Request $request, Product $product)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'sku' => 'nullable|string|unique:products,sku,' . $product->id,
+            'current_selling_price' => 'required|numeric|min:0',
+            'price_per_pyi' => 'nullable|numeric|min:0',
+        ]);
+
+        $product->update($validated);
+
+        return redirect()->route('inventory.index')->with('success', 'Product updated successfully.');
     }
 
     public function stock()

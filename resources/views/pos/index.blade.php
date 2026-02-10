@@ -21,7 +21,12 @@
                 </div>
                 <h3 class="font-semibold text-slate-800 text-sm mb-1 truncate">{{ $product->name }}</h3>
                 <div class="flex justify-between items-center">
-                    <span class="text-indigo-600 font-bold">{{ number_format($product->current_selling_price) }} K</span>
+                    <div class="flex flex-col">
+                        <span class="text-indigo-600 font-bold">{{ number_format($product->current_selling_price) }} K <span class="text-xs text-slate-400 font-normal">/bag</span></span>
+                        @if($product->price_per_pyi)
+                            <span class="text-slate-500 text-xs">{{ number_format($product->price_per_pyi) }} K /pyi</span>
+                        @endif
+                    </div>
                     <span class="text-xs {{ $product->stock_count > 0 ? 'text-emerald-600 bg-emerald-50' : 'text-red-600 bg-red-50' }} px-2 py-1 rounded-full">
                         {{ $product->stock_count + 0 }} Left
                     </span>

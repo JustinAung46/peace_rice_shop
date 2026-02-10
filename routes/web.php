@@ -8,15 +8,15 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AuthController;
 
+use App\Http\Controllers\DashboardController;
+
 Route::get('login', [AuthController::class, 'login'])->name('login');
 Route::post('login', [AuthController::class, 'authenticate'])->name('authenticate');
 Route::post('auth/check', [AuthController::class, 'checkAccount'])->name('auth.check');
 Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('/', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::middleware(['can:view-inventory'])->group(function () {
         Route::resource('inventory', InventoryController::class);
