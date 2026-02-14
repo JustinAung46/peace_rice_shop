@@ -14,6 +14,7 @@
             <thead>
                 <tr class="bg-slate-50 text-slate-500 text-xs uppercase font-semibold">
                     <th class="px-6 py-4">Product Name</th>
+                    <th class="px-6 py-4">Category</th>
                     <th class="px-6 py-4">SKU</th>
                     <th class="px-6 py-4 text-right">Selling Price (Bag)</th>
                     <th class="px-6 py-4 text-right">Price (Pyi)</th>
@@ -24,6 +25,15 @@
                 @forelse($products as $product)
                 <tr class="hover:bg-slate-50 transition-colors">
                     <td class="px-6 py-4 font-medium text-slate-800">{{ $product->name }}</td>
+                    <td class="px-6 py-4 text-slate-600">
+                        @if($product->category)
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-800">
+                                {{ $product->category->name }}
+                            </span>
+                        @else
+                            <span class="text-slate-400">-</span>
+                        @endif
+                    </td>
                     <td class="px-6 py-4 text-slate-500">{{ $product->sku ?? '-' }}</td>
                     <td class="px-6 py-4 text-right font-medium text-slate-800">{{ number_format($product->current_selling_price) }} MMK</td>
                     <td class="px-6 py-4 text-right text-slate-600">{{ $product->price_per_pyi ? number_format($product->price_per_pyi) . ' MMK' : '-' }}</td>

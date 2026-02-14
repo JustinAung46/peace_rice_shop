@@ -6,17 +6,20 @@ use Illuminate\Http\Request;
 
 use App\Models\Product;
 
+use App\Services\StockTransferService;
+
 class InventoryController extends Controller
 {
     public function index()
     {
-        $products = Product::all();
+        $products = Product::with('category')->get();
         return view('inventory.index', compact('products'));
     }
 
     public function create()
     {
-        return view('inventory.create');
+        $categories = \App\Models\Category::all();
+        return view('inventory.create', compact('categories'));
     }
 
     public function store(Request $request)
@@ -26,6 +29,7 @@ class InventoryController extends Controller
             'sku' => 'nullable|string|unique:products',
             'current_selling_price' => 'required|numeric|min:0',
             'price_per_pyi' => 'nullable|numeric|min:0',
+            'category_id' => 'nullable|exists:categories,id',
         ]);
 
         Product::create($validated);
@@ -35,11 +39,8 @@ class InventoryController extends Controller
 
     public function edit(Product $product)
     {
-        // Route binding will automatically fetch the product by ID
-        // Route::resource('inventory', ...) expects {inventory} parameter, which defaults to 'inventory' => Product model if type hinted
-        // But since standard resource param is singular of resource name, let's verify if we need to be explicit.
-        // Usually Laravel automatically resolves it.
-        return view('inventory.edit', compact('product'));
+        $categories = \App\Models\Category::all();
+        return view('inventory.edit', compact('product', 'categories'));
     }
 
     public function update(Request $request, Product $product)
@@ -49,6 +50,7 @@ class InventoryController extends Controller
             'sku' => 'nullable|string|unique:products,sku,' . $product->id,
             'current_selling_price' => 'required|numeric|min:0',
             'price_per_pyi' => 'nullable|numeric|min:0',
+            'category_id' => 'nullable|exists:categories,id',
         ]);
 
         $product->update($validated);
@@ -94,7 +96,7 @@ class InventoryController extends Controller
         return view('inventory.transfer', compact('products', 'warehouses'));
     }
 
-    public function storeTransfer(Request $request)
+    public function storeTransfer(Request $request, StockTransferService $transferService)
     {
         $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
@@ -103,49 +105,12 @@ class InventoryController extends Controller
             'quantity' => 'required|numeric|min:0.01',
         ]);
 
-        $quantityToTransfer = $validated['quantity'];
-        $productId = $validated['product_id'];
-        $fromId = $validated['from_warehouse_id'];
-        $toId = $validated['to_warehouse_id'];
-
-        // Get batches from source warehouse, oldest first (FIFO)
-        $batches = \App\Models\StockBatch::where('product_id', $productId)
-            ->where('warehouse_id', $fromId)
-            ->where('remaining_quantity', '>', 0)
-            ->orderBy('purchase_date', 'asc')
-            ->get();
-
-        $totalAvailable = $batches->sum('remaining_quantity');
-
-        if ($totalAvailable < $quantityToTransfer) {
-            return back()->withErrors(['quantity' => 'Not enough stock in source warehouse. Available: ' . $totalAvailable]);
-        }
-
-        \DB::transaction(function () use ($batches, $quantityToTransfer, $toId, $productId) {
-            $remainingToTransfer = $quantityToTransfer;
-
-            foreach ($batches as $batch) {
-                if ($remainingToTransfer <= 0) break;
-
-                $take = min($batch->remaining_quantity, $remainingToTransfer);
-                
-                // Deduct from source batch
-                $batch->decrement('remaining_quantity', $take);
-                
-                // Create new batch in destination warehouse with SAME cost price
-                \App\Models\StockBatch::create([
-                    'product_id' => $productId,
-                    'warehouse_id' => $toId,
-                    'original_quantity' => $take,
-                    'remaining_quantity' => $take,
-                    'cost_price' => $batch->cost_price, // PRESERVE COST
-                    'purchase_date' => $batch->purchase_date,
-                    'batch_code' => $batch->batch_code ? $batch->batch_code . '-TR' : null,
-                ]);
-
-                $remainingToTransfer -= $take;
-            }
-        });
+        $transferService->transfer(
+            $validated['product_id'],
+            $validated['from_warehouse_id'],
+            $validated['to_warehouse_id'],
+            $validated['quantity']
+        );
 
         return redirect()->route('inventory.index')->with('success', 'Stock transferred successfully.');
     }

@@ -20,6 +20,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware(['can:view-inventory'])->group(function () {
         Route::resource('inventory', InventoryController::class);
+        Route::resource('categories', App\Http\Controllers\CategoryController::class);
         Route::get('stock/add', [InventoryController::class, 'stock'])->name('inventory.stock.add');
         Route::post('stock/store', [InventoryController::class, 'storeStock'])->name('inventory.stock.store');
         Route::get('stock/transfer', [InventoryController::class, 'transfer'])->name('inventory.transfer');
@@ -29,6 +30,9 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['can:view-pos'])->group(function () {
         Route::get('pos', [POSController::class, 'index'])->name('pos.index');
         Route::post('pos', [POSController::class, 'store'])->name('pos.store');
+        Route::post('pos/check-stock', [POSController::class, 'checkStock'])->name('pos.checkStock');
+        Route::post('pos/transfer-stock', [POSController::class, 'transferStock'])->name('pos.transferStock');
+        Route::resource('customers', App\Http\Controllers\CustomerController::class);
     });
 
     Route::middleware(['can:view-profit'])->group(function () {
