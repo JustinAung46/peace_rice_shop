@@ -7,7 +7,7 @@
 </div>
 
 <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-    <form action="{{ route('inventory.update', $product->id) }}" method="POST">
+    <form action="{{ route('inventory.update', $product->id) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -49,6 +49,19 @@
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
                 <textarea name="description" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">{{ old('description', $product->description) }}</textarea>
+            </div>
+
+            <!-- Image Upload -->
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-slate-700 mb-1">Product Image</label>
+                @if($product->image_path)
+                    <div class="mb-3">
+                        <img src="{{ asset('storage/' . $product->image_path) }}" alt="{{ $product->name }}" class="h-32 w-32 object-cover rounded-lg border border-slate-200 shadow-sm">
+                        <p class="mt-1 text-xs text-slate-500">Current Image</p>
+                    </div>
+                @endif
+                <input type="file" name="image" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                <p class="mt-1 text-xs text-slate-500">Upload new to replace. Allowed: JPG, PNG, GIF, SVG. Max: 2MB.</p>
             </div>
         </div>
 

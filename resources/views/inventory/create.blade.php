@@ -7,7 +7,7 @@
 </div>
 
 <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-    <form action="{{ route('inventory.store') }}" method="POST">
+    <form action="{{ route('inventory.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -48,6 +48,13 @@
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
                 <textarea name="description" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+            </div>
+
+            <!-- Image Upload -->
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-slate-700 mb-1">Product Image</label>
+                <input type="file" name="image" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                <p class="mt-1 text-xs text-slate-500">Allowed formats: JPG, PNG, GIF, SVG. Max size: 2MB.</p>
             </div>
         </div>
 

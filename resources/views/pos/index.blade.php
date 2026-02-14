@@ -48,7 +48,7 @@
                     
                     <div class="h-24 bg-slate-50 rounded-lg mb-3 flex items-center justify-center text-slate-300 group-hover:bg-slate-100 transition-colors">
                         @if($product->image_path)
-                            <img src="{{ $product->image_path }}" class="h-full w-full object-cover rounded-lg">
+                            <img src="{{ asset('storage/' . $product->image_path) }}" class="h-full w-full object-cover rounded-lg">
                         @else
                             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
                         @endif

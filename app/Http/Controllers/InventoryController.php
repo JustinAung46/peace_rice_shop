@@ -30,30 +30,48 @@ class InventoryController extends Controller
             'current_selling_price' => 'required|numeric|min:0',
             'price_per_pyi' => 'nullable|numeric|min:0',
             'category_id' => 'nullable|exists:categories,id',
+            'description' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
+
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('products', 'public');
+            $validated['image_path'] = $imagePath;
+        }
 
         Product::create($validated);
 
         return redirect()->route('inventory.index')->with('success', 'Product created successfully.');
     }
 
-    public function edit(Product $product)
+    public function edit(Product $inventory)
     {
         $categories = \App\Models\Category::all();
-        return view('inventory.edit', compact('product', 'categories'));
+        return view('inventory.edit', ['product' => $inventory, 'categories' => $categories]);
     }
 
-    public function update(Request $request, Product $product)
+    public function update(Request $request, Product $inventory)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'sku' => 'nullable|string|unique:products,sku,' . $product->id,
+            'sku' => 'nullable|string|unique:products,sku,' . $inventory->id,
             'current_selling_price' => 'required|numeric|min:0',
             'price_per_pyi' => 'nullable|numeric|min:0',
             'category_id' => 'nullable|exists:categories,id',
+            'description' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
-        $product->update($validated);
+        if ($request->hasFile('image')) {
+            // Delete old image if it exists
+            if ($inventory->image_path) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($inventory->image_path);
+            }
+            $imagePath = $request->file('image')->store('products', 'public');
+            $validated['image_path'] = $imagePath;
+        }
+
+        $inventory->update($validated);
 
         return redirect()->route('inventory.index')->with('success', 'Product updated successfully.');
     }

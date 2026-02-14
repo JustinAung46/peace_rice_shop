@@ -37,6 +37,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware(['can:view-profit'])->group(function () {
         Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('reports/daily', [ReportController::class, 'dailyReport'])->name('reports.daily');
+        Route::get('reports/items', [ReportController::class, 'saleItemsReport'])->name('reports.items');
     });
 
     Route::middleware(['can:admin'])->group(function () {
