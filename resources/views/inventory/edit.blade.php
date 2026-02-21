@@ -45,6 +45,12 @@
                 <input type="number" name="price_per_pyi" value="{{ old('price_per_pyi', $product->price_per_pyi) }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" step="0.01">
             </div>
 
+            <!-- Pyi per Bag -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Pyi Per Bag <span class="text-slate-400 text-xs">(For transformations)</span></label>
+                <input type="number" name="pyi_per_bag" value="{{ old('pyi_per_bag', $product->pyi_per_bag) }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g. 24 or 6" step="1" min="1">
+            </div>
+
             <!-- Description -->
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>

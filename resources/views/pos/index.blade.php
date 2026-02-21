@@ -8,11 +8,11 @@
             <h3 class="font-bold text-slate-700">Categories</h3>
         </div>
         <div class="flex-1 overflow-y-auto p-2 space-y-1">
-            <button onclick="filterCategory('all')" class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors bg-indigo-50 text-indigo-700 hover:bg-indigo-100 category-btn" data-id="all">
+            <button onclick="filterCategory('all')" class="w-full text-left px-4 py-3 rounded-xl text-base font-bold transition-colors bg-indigo-50 text-indigo-700 hover:bg-indigo-100 shadow-sm border border-indigo-100 category-btn" data-id="all">
                 All Products
             </button>
             @foreach($categories as $category)
-            <button onclick="filterCategory({{ $category->id }})" class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors category-btn" data-id="{{ $category->id }}">
+            <button onclick="filterCategory({{ $category->id }})" class="w-full text-left px-4 py-3 rounded-xl text-base font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent hover:border-slate-100 transition-colors category-btn" data-id="{{ $category->id }}">
                 {{ $category->name }}
             </button>
             @endforeach
@@ -28,12 +28,14 @@
                 <svg class="w-5 h-5 text-slate-400 absolute left-3 top-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
             <div class="w-1/3">
-                <select id="customer-select" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm bg-white" onchange="updatePaymentOptions()">
-                    <option value="">Walk-in Customer</option>
-                    @foreach($customers as $customer)
-                        <option value="{{ $customer->id }}" data-credit="{{ $customer->credit_balance }}">{{ $customer->name }}</option>
-                    @endforeach
-                </select>
+                <button onclick="openCustomerModal()" id="customer-select-btn" class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white shadow-sm flex justify-between items-center hover:border-indigo-500 hover:ring-2 hover:ring-indigo-200 transition-all group">
+                    <div class="flex flex-col items-start">
+                        <span class="text-xs text-slate-400 font-medium">Customer</span>
+                        <span id="selected-customer-name" class="font-bold text-slate-800">Walk-in Customer</span>
+                    </div>
+                    <svg class="w-5 h-5 text-slate-400 group-hover:text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                </button>
+                <input type="hidden" id="customer-select" value="">
             </div>
         </div>
 
@@ -41,20 +43,20 @@
         <div class="flex-1 overflow-y-auto pr-2">
             <div class="grid grid-cols-3 gap-4" id="product-grid">
                 @foreach($products as $product)
-                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 cursor-pointer hover:border-indigo-500 transition-all product-card group"
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 cursor-pointer hover:border-indigo-500 hover:shadow-md transition-all product-card group transform active:scale-95"
                      data-category="{{ $product->category_id ?? 'uncategorized' }}"
                      data-name="{{ strtolower($product->name) }}"
                      onclick="addToCart({{ $product->id }}, '{{ addslashes($product->name) }}', {{ $product->current_selling_price }}, {{ $product->stock_count }})">
                     
-                    <div class="h-24 bg-slate-50 rounded-lg mb-3 flex items-center justify-center text-slate-300 group-hover:bg-slate-100 transition-colors">
+                    <div class="h-32 bg-slate-50 rounded-xl mb-4 flex items-center justify-center text-slate-300 group-hover:bg-slate-100 transition-colors overflow-hidden">
                         @if($product->image_path)
-                            <img src="{{ asset('storage/' . $product->image_path) }}" class="h-full w-full object-cover rounded-lg">
+                            <img src="{{ asset('storage/' . $product->image_path) }}" class="h-full w-full object-cover">
                         @else
-                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
                         @endif
                     </div>
                     
-                    <h3 class="font-semibold text-slate-800 text-sm mb-1 truncate">{{ $product->name }}</h3>
+                    <h3 class="font-bold text-slate-800 text-base mb-2 line-clamp-2 leading-snug">{{ $product->name }}</h3>
                     <div class="flex justify-between items-end">
                         <div class="flex flex-col">
                             <span class="text-indigo-600 font-bold">{{ number_format($product->current_selling_price) }}</span>
@@ -107,10 +109,30 @@
                 </div>
             </div>
             
-            <div class="grid grid-cols-3 gap-2 mb-4">
-                <button onclick="setPayment('Cash')" id="btn-cash" class="payment-btn py-2 px-1 border rounded-lg text-xs font-medium text-center transition-all bg-indigo-50 border-indigo-200 text-indigo-700 ring-2 ring-indigo-500">Cash</button>
-                <button onclick="setPayment('Kpay')" id="btn-kpay" class="payment-btn py-2 px-1 border rounded-lg text-xs font-medium text-center transition-all border-slate-200 text-slate-600 hover:bg-slate-100">Kpay</button>
-                <button onclick="setPayment('Credit')" id="btn-credit" class="payment-btn py-2 px-1 border rounded-lg text-xs font-medium text-center transition-all border-slate-200 text-slate-400 cursor-not-allowed" disabled title="Select a customer first">Credit</button>
+            <!-- Payment Methods Selection -->
+            <div class="grid grid-cols-3 gap-3 mb-4">
+                <button onclick="addPayment('Cash')" id="btn-cash" class="py-4 px-2 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 active:scale-95 transition-all shadow-sm flex flex-col items-center gap-1">
+                    <svg class="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    Cash
+                </button>
+                <button onclick="addPayment('Kpay')" id="btn-kpay" class="py-4 px-2 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 active:scale-95 transition-all shadow-sm flex flex-col items-center gap-1">
+                    <svg class="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                    KPay
+                </button>
+                <button onclick="addPayment('Credit')" id="btn-credit" class="py-4 px-2 border border-slate-200 rounded-xl text-sm font-bold text-slate-400 bg-slate-50 cursor-not-allowed flex flex-col items-center gap-1 opacity-60" disabled title="Select a customer first">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+                    Credit
+                </button>
+            </div>
+
+            <!-- Active Payments List -->
+            <div id="active-payments" class="space-y-2 mb-4 max-h-32 overflow-y-auto">
+                <!-- Payment rows will be added here -->
+            </div>
+
+            <div class="flex justify-between text-sm mb-4 font-medium" id="payment-status-row">
+                <span class="text-slate-500">Total Paid: <span id="paid-total" class="text-slate-800">0</span></span>
+                <span id="remaining-label" class="text-slate-500">Remaining: <span id="remaining-amount" class="text-red-500">0</span></span>
             </div>
 
             <button onclick="processCheckout()" class="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none" id="checkout-btn" disabled>
@@ -139,12 +161,21 @@
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Quantity</label>
-                    <input type="number" id="modal-qty" step="0.5" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    <input type="number" id="modal-qty" step="0.1" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Discount (Total)</label>
                     <input type="number" id="modal-discount" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                 </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Source Warehouse</label>
+                <select id="modal-warehouse" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
+                    @foreach($warehouses as $warehouse)
+                        <option value="{{ $warehouse->id }}">{{ $warehouse->name }}</option>
+                    @endforeach
+                </select>
             </div>
         </div>
 
@@ -155,9 +186,103 @@
     </div>
 </div>
 
+<!-- Touch-Friendly Payment Modal -->
+<div id="payment-modal" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-center justify-center backdrop-blur-sm p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col">
+        <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+            <h3 class="text-lg font-bold text-slate-800" id="payment-modal-title">Payment Amount</h3>
+            <button onclick="closePaymentModal()" class="text-slate-400 hover:text-slate-600 p-2">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+        
+        <div class="p-4 flex-1">
+            <!-- Amount Display -->
+            <div class="mb-4">
+                <div class="bg-slate-100 p-4 rounded-xl text-center flex items-baseline justify-center gap-2">
+                    <span id="payment-numpad-display" class="text-3xl font-black text-indigo-700">0</span>
+                    <span class="text-sm font-bold text-slate-400">MMK</span>
+                </div>
+            </div>
+
+            <!-- Quick Amounts -->
+            <div class="grid grid-cols-4 gap-2 mb-4">
+                <button onclick="setNumpadValue('full_remain')" id="btn-quick-full" class="col-span-2 py-3 bg-indigo-50 text-indigo-700 rounded-lg font-bold hover:bg-indigo-100 text-xs border border-indigo-100 transition-colors">Full Amount</button>
+                <button onclick="appendNumpadQuick(1000)" class="py-3 bg-slate-50 text-slate-700 rounded-lg font-bold hover:bg-slate-100 text-xs border border-slate-200 transition-colors">1k</button>
+                <button onclick="appendNumpadQuick(5000)" class="py-3 bg-slate-50 text-slate-700 rounded-lg font-bold hover:bg-slate-100 text-xs border border-slate-200 transition-colors">5k</button>
+                <button onclick="appendNumpadQuick(10000)" class="py-3 bg-slate-50 text-slate-700 rounded-lg font-bold hover:bg-slate-100 text-xs border border-slate-200 transition-colors">10k</button>
+                <button onclick="appendNumpadQuick(20000)" class="py-3 bg-slate-50 text-slate-700 rounded-lg font-bold hover:bg-slate-100 text-xs border border-slate-200 transition-colors">20k</button>
+                <button onclick="appendNumpadQuick(50000)" class="py-3 bg-slate-50 text-slate-700 rounded-lg font-bold hover:bg-slate-100 text-xs border border-slate-200 transition-colors">50k</button>
+                <button onclick="appendNumpadQuick(100000)" class="py-3 bg-slate-50 text-slate-700 rounded-lg font-bold hover:bg-slate-100 text-xs border border-slate-200 transition-colors">100k</button>
+            </div>
+
+            <!-- Number Pad -->
+            <div class="grid grid-cols-3 gap-2">
+                @foreach([1,2,3,4,5,6,7,8,9] as $num)
+                    <button onclick="appendNumpad({{ $num }})" class="py-3 bg-white border border-slate-200 rounded-lg text-xl font-bold text-slate-700 hover:bg-slate-50 active:bg-slate-100 shadow-sm transition-colors">{{ $num }}</button>
+                @endforeach
+                <button onclick="clearNumpad()" class="py-3 bg-red-50 border border-red-100 rounded-lg text-lg font-bold text-red-600 hover:bg-red-100 active:bg-red-200 shadow-sm transition-colors">C</button>
+                <button onclick="appendNumpad(0)" class="py-3 bg-white border border-slate-200 rounded-lg text-xl font-bold text-slate-700 hover:bg-slate-50 active:bg-slate-100 shadow-sm transition-colors">0</button>
+                <button onclick="popNumpad()" class="py-3 bg-slate-50 border border-slate-200 rounded-lg text-lg font-bold text-slate-700 hover:bg-slate-100 active:bg-slate-200 shadow-sm transition-colors">
+                    <svg class="w-6 h-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z" /></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-3">
+            <button onclick="closePaymentModal()" class="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 active:scale-95 transition-all shadow-sm">Cancel</button>
+            <button onclick="confirmPaymentModal()" class="flex-[2] py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 active:scale-95 transition-all">Confirm</button>
+        </div>
+    </div>
+    </div>
+</div>
+
+<!-- Customer Selection Modal -->
+<div id="customer-modal" class="fixed inset-0 bg-black/60 z-[70] hidden flex items-center justify-center backdrop-blur-sm p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[80vh]">
+        <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+            <h3 class="text-lg font-bold text-slate-800">Select Customer</h3>
+            <button onclick="closeCustomerModal()" class="text-slate-400 hover:text-slate-600 p-2">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+        
+        <div class="p-4 border-b border-slate-100 bg-white sticky top-0 z-10">
+            <div class="relative">
+                <input type="text" id="customer-search" placeholder="Search customers..." class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm" oninput="filterCustomers()">
+                <svg class="w-5 h-5 text-slate-400 absolute left-3 top-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto p-2 space-y-1" id="customer-list">
+            <button onclick="selectCustomer('', 'Walk-in Customer', 0)" class="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-50 flex items-center justify-between group transition-colors customer-item">
+                <span class="font-bold text-slate-800">Walk-in Customer</span>
+                <span class="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded-lg group-hover:bg-white">Default</span>
+            </button>
+            @foreach($customers as $customer)
+            <button onclick="selectCustomer('{{ $customer->id }}', '{{ addslashes($customer->name) }}', {{ $customer->credit_balance }})" class="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-50 flex items-center justify-between group transition-colors customer-item" data-name="{{ strtolower($customer->name) }}">
+                <div class="flex flex-col">
+                    <span class="font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">{{ $customer->name }}</span>
+                    <span class="text-xs text-slate-500">Credit Balance: {{ number_format($customer->credit_balance) }} MMK</span>
+                </div>
+                <svg class="w-5 h-5 text-slate-300 group-hover:text-indigo-500 opacity-0 group-hover:opacity-100 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+            </button>
+            @endforeach
+            <div id="no-customers" class="hidden text-center py-8 text-slate-400">No customers found</div>
+        </div>
+    </div>
+</div>
+
 <script>
     let cart = {};
-    let currentPaymentMethod = 'Cash';
+    let payments = []; // Array of {method, amount}
+    let currentEditingPayment = null; // {index, method} or null
+    let numpadValue = '0';
+    const warehouses = {
+        @foreach($warehouses as $w)
+            {{ $w->id }}: '{{ addslashes($w->name) }}',
+        @endforeach
+    };
 
     // --- Product Filtering ---
     const searchInput = document.getElementById('search');
@@ -197,9 +322,9 @@
         // Update styling
         categoryBtns.forEach(btn => {
             if(btn.dataset.id == id) {
-                btn.className = 'w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors bg-indigo-50 text-indigo-700 hover:bg-indigo-100 category-btn';
+                btn.className = 'w-full text-left px-4 py-3 rounded-xl text-base font-bold transition-colors bg-indigo-50 text-indigo-700 hover:bg-indigo-100 shadow-sm border border-indigo-100 category-btn';
             } else {
-                btn.className = 'w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors category-btn';
+                btn.className = 'w-full text-left px-4 py-3 rounded-xl text-base font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent hover:border-slate-100 transition-colors category-btn';
             }
         });
 
@@ -221,7 +346,8 @@
                 price: parseFloat(price), 
                 quantity: 0, 
                 maxStock, 
-                discount: 0 
+                discount: 0,
+                warehouse_id: 1 // Default to Shop 1
             };
         }
 
@@ -265,12 +391,13 @@
                         <div class="text-xs text-slate-500 flex items-center gap-2">
                              <span>${parseInt(item.price).toLocaleString()} x ${item.quantity}</span>
                              ${item.discount > 0 ? `<span class="text-red-500 bg-red-50 px-1 rounded">-${parseInt(item.discount).toLocaleString()}</span>` : ''}
+                             <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200 ml-auto uppercase font-bold">${warehouses[item.warehouse_id] || 'Shop 1'}</span>
                         </div>
                     </div>
-                    <div class="flex items-center space-x-1">
-                        <button onclick="updateQty(${item.id}, -1)" class="w-6 h-6 rounded bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center text-lg leading-none pb-1">-</button>
-                        <span class="text-sm font-semibold w-6 text-center text-slate-700">${item.quantity}</span>
-                        <button onclick="updateQty(${item.id}, 1)" class="w-6 h-6 rounded bg-indigo-100 text-indigo-600 hover:bg-indigo-200 flex items-center justify-center text-lg leading-none pb-1">+</button>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="updateQty(${item.id}, -1)" class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 active:bg-slate-300 flex items-center justify-center text-2xl leading-none pb-1 transition-colors">-</button>
+                        <span class="text-base font-bold w-6 text-center text-slate-800">${item.quantity}</span>
+                        <button onclick="updateQty(${item.id}, 1)" class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 hover:bg-indigo-200 active:bg-indigo-300 flex items-center justify-center text-2xl leading-none pb-1 transition-colors">+</button>
                     </div>
                 `;
                 container.appendChild(div);
@@ -283,6 +410,8 @@
         document.getElementById('cart-subtotal').innerText = subtotal.toLocaleString() + ' MMK';
         document.getElementById('cart-discount').innerText = totalDiscount > 0 ? '-' + totalDiscount.toLocaleString() + ' MMK' : '0 MMK';
         document.getElementById('cart-total').innerText = netTotal.toLocaleString() + ' MMK';
+
+        updatePaymentCalculations();
     }
 
     function updateQty(id, change) {
@@ -300,7 +429,9 @@
     function clearCart() {
         if(confirm('Clear cart?')) {
             cart = {};
+            payments = [];
             renderCart();
+            renderPayments();
         }
     }
 
@@ -316,6 +447,7 @@
         document.getElementById('modal-price').value = item.price;
         document.getElementById('modal-qty').value = item.quantity;
         document.getElementById('modal-discount').value = item.discount;
+        document.getElementById('modal-warehouse').value = item.warehouse_id || 1;
         
         modal.classList.remove('hidden');
     }
@@ -329,6 +461,7 @@
         const price = parseFloat(document.getElementById('modal-price').value);
         const qty = parseFloat(document.getElementById('modal-qty').value);
         const discount = parseFloat(document.getElementById('modal-discount').value);
+        const warehouseId = parseInt(document.getElementById('modal-warehouse').value);
 
         if (cart[id]) {
              if (qty <= 0) {
@@ -341,15 +474,16 @@
                 cart[id].price = price;
                 cart[id].quantity = qty;
                 cart[id].discount = discount;
+                cart[id].warehouse_id = warehouseId;
             }
             renderCart();
             closeModal();
         }
     }
 
-    // --- Payment Logic ---
-    function updatePaymentOptions() {
-        const customerId = document.getElementById('customer-select').value;
+    function updatePaymentOptions(selectedId = null) {
+        // If called without arg, get from hidden input
+        const customerId = selectedId !== null ? selectedId : document.getElementById('customer-select').value;
         const creditBtn = document.getElementById('btn-credit');
         
         if (customerId) {
@@ -363,24 +497,244 @@
             creditBtn.classList.remove('bg-indigo-50', 'text-indigo-700', 'ring-2', 'ring-indigo-500', 'text-slate-600', 'hover:bg-slate-100');
             creditBtn.title = "Select a customer first";
             
-            // If credit was selected, switch back to cash
-            if(currentPaymentMethod === 'Credit') {
-                setPayment('Cash');
-            }
+            // If credit was in the payments list, remove it
+            payments = payments.filter(p => p.method !== 'Credit');
+            renderPayments();
+            updatePaymentCalculations();
         }
     }
 
     function setPayment(method) {
+        // Redundant with new multi-payment system, but keeping for compatibility if called
+        addPayment(method);
+    }
+
+    function addPayment(method) {
         if(method === 'Credit' && document.getElementById('btn-credit').disabled) return;
 
-        currentPaymentMethod = method;
+        // Check if payment method already exists
+        const existingIndex = payments.findIndex(p => p.method === method);
         
-        document.querySelectorAll('.payment-btn').forEach(btn => {
-            btn.className = 'payment-btn py-2 px-1 border rounded-lg text-xs font-medium text-center transition-all border-slate-200 text-slate-600 hover:bg-slate-100';
-        });
+        if (existingIndex !== -1) {
+             // Edit existing
+             editPayment(existingIndex);
+        } else {
+             // Add new
+             currentEditingPayment = { index: -1, method: method };
+             openPaymentModal(method);
+        }
+    }
 
-        const activeBtn = document.getElementById('btn-' + method.toLowerCase());
-        activeBtn.className = 'payment-btn py-2 px-1 border rounded-lg text-xs font-medium text-center transition-all bg-indigo-50 border-indigo-200 text-indigo-700 ring-2 ring-indigo-500';
+    function removePayment(index) {
+        payments.splice(index, 1);
+        renderPayments();
+        updatePaymentCalculations();
+    }
+
+    function editPayment(index) {
+        const payment = payments[index];
+        currentEditingPayment = { index: index, method: payment.method };
+        openPaymentModal(payment.method, payment.amount);
+    }
+
+    // --- Numpad Modal Logic ---
+    function openPaymentModal(method, initialAmount = null) {
+        const cartTotal = getCartTotal();
+        const currentPaid = payments.reduce((sum, p, i) => i === (currentEditingPayment?.index ?? -1) ? sum : sum + p.amount, 0);
+        const remaining = Math.max(0, cartTotal - currentPaid);
+
+        document.getElementById('payment-modal-title').innerText = (currentEditingPayment.index === -1 ? 'Add ' : 'Edit ') + method + ' Payment';
+        
+        // Default to remaining amount if adding new, or current amount if editing
+        numpadValue = (initialAmount !== null ? initialAmount : remaining).toString();
+        updateNumpadDisplay();
+        
+        // Update Quick Button Text
+        const quickBtn = document.getElementById('btn-quick-full');
+        quickBtn.innerText = (payments.length === 0 || (payments.length === 1 && currentEditingPayment.index !== -1)) ? 'Full Amount' : 'Remaining';
+
+        const confirmBtn = document.querySelector('#payment-modal button[onclick="confirmPaymentModal()"]');
+        confirmBtn.innerText = currentEditingPayment.index === -1 ? 'Add Payment' : 'Save Changes';
+
+        const modal = document.getElementById('payment-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex'); // Ensure flex is added back
+    }
+
+    function closePaymentModal() {
+        const modal = document.getElementById('payment-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        currentEditingPayment = null;
+    }
+
+    function updateNumpadDisplay() {
+        const val = parseFloat(numpadValue) || 0;
+        document.getElementById('payment-numpad-display').innerText = val.toLocaleString();
+    }
+
+    function appendNumpad(num) {
+        if (numpadValue === '0') numpadValue = num.toString();
+        else numpadValue += num.toString();
+        updateNumpadDisplay();
+    }
+
+    function appendNumpadQuick(amount) {
+        const current = parseFloat(numpadValue) || 0;
+        numpadValue = (current + amount).toString();
+        updateNumpadDisplay();
+    }
+
+    function setNumpadValue(type) {
+        const cartTotal = getCartTotal();
+        const otherPaid = payments.reduce((sum, p, i) => i === (currentEditingPayment?.index ?? -1) ? sum : sum + p.amount, 0);
+        const remaining = Math.max(0, cartTotal - otherPaid);
+        
+        if (type === 'full_remain') {
+            numpadValue = remaining.toString();
+        }
+        updateNumpadDisplay();
+    }
+
+    function clearNumpad() {
+        numpadValue = '0';
+        updateNumpadDisplay();
+    }
+
+    function popNumpad() {
+        if (numpadValue.length > 1) {
+            numpadValue = numpadValue.slice(0, -1);
+        } else {
+            numpadValue = '0';
+        }
+        updateNumpadDisplay();
+    }
+
+    function confirmPaymentModal() {
+        let finalAmount = parseFloat(numpadValue) || 0;
+        
+        // Validation: Cap input to remaining if not Cash
+        // Or if user insists "don't allow user to input more than total amount" strictly:
+        // We will interpret "total amount" as "Cart Total". 
+        // Logic: Cannot pay more than what is owed?
+        // Let's cap at (CartTotal - OtherPayments) for ALL methods including Cash as per presumed request.
+        // If they want change, they might need to relax this rule. 
+        // But the prompt was specific: "don't allow user to input more than total amount"
+        
+        const cartTotal = getCartTotal();
+        const otherPaid = payments.reduce((sum, p, i) => i === (currentEditingPayment?.index ?? -1) ? sum : sum + p.amount, 0);
+        const maxAllowed = Math.max(0, cartTotal - otherPaid);
+        
+        // STRICT CHECK: If final amount > maxAllowed (plus a small epsilon/tolerance if needed), cap it?
+        // Or strictly strictly "Total Amount" (Cart Total).
+        // If I put 50,000 for 8,000 item, that is > total amount.
+        // I will cap it at maxAllowed.
+        
+        if (finalAmount > maxAllowed) {
+             Swal.fire({
+                 icon: 'error',
+                 title: 'Invalid Amount',
+                 text: 'Amount cannot exceed ' + maxAllowed.toLocaleString() + ' MMK',
+                 toast: true,
+                 position: 'top-end',
+                 showConfirmButton: false,
+                 timer: 3000
+             });
+             return;
+        }
+        
+        if (currentEditingPayment.index === -1) {
+            // Addition
+            payments.push({
+                method: currentEditingPayment.method,
+                amount: finalAmount
+            });
+        } else {
+            // Edit
+            payments[currentEditingPayment.index].amount = finalAmount;
+        }
+
+        renderPayments();
+        updatePaymentCalculations();
+        
+        // FIX: Ensure modal closes
+        setTimeout(() => closePaymentModal(), 50);
+    }
+
+    function getCartTotal() {
+        let subtotal = 0;
+        let totalDiscount = 0;
+        Object.values(cart).forEach(item => {
+            subtotal += item.price * item.quantity;
+            totalDiscount += parseFloat(item.discount || 0);
+        });
+        return subtotal - totalDiscount;
+    }
+
+    function renderPayments() {
+        const container = document.getElementById('active-payments');
+        container.innerHTML = '';
+
+        payments.forEach((payment, index) => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200 cursor-pointer hover:border-indigo-300 transition-colors group';
+            div.onclick = (e) => {
+                if(!e.target.closest('button')) editPayment(index);
+            };
+            div.innerHTML = `
+                <div class="flex-1">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${payment.method}</div>
+                    <div class="text-sm font-bold text-slate-700">${payment.amount.toLocaleString()} MMK</div>
+                </div>
+                <button onclick="removePayment(${index})" class="text-slate-300 hover:text-red-500 p-1 transition-colors">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                </button>
+                <div class="text-indigo-400 group-hover:text-indigo-600">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function updatePaymentCalculations() {
+        const cartTotal = getCartTotal();
+        const paidTotal = payments.reduce((sum, p) => sum + p.amount, 0);
+        const remaining = cartTotal - paidTotal;
+
+        document.getElementById('paid-total').innerText = paidTotal.toLocaleString() + ' MMK';
+        document.getElementById('remaining-amount').innerText = Math.abs(remaining).toLocaleString() + ' MMK';
+        
+        const remainingLabel = document.getElementById('remaining-label');
+        const remainingEl = document.getElementById('remaining-amount');
+
+        if (remaining > 0) {
+            // Remaining
+            remainingLabel.childNodes[0].nodeValue = 'Remaining: '; // Update text node only
+            remainingEl.className = 'text-red-500 font-bold ml-1';
+            remainingEl.innerText = Math.abs(remaining).toLocaleString() + ' MMK';
+        } else if (remaining < 0) {
+            // Change
+            remainingLabel.childNodes[0].nodeValue = 'Change: ';
+            remainingEl.className = 'text-emerald-500 font-bold ml-1';
+            remainingEl.innerText = Math.abs(remaining).toLocaleString() + ' MMK';
+        } else {
+            // Balanced
+            remainingLabel.childNodes[0].nodeValue = 'Balanced ';
+            remainingEl.className = 'text-emerald-600 font-bold ml-1';
+            remainingEl.innerText = '✓';
+        }
+        
+        const checkoutBtn = document.getElementById('checkout-btn');
+        const hasCredit = payments.some(p => p.method === 'Credit');
+        
+        if (hasCredit) {
+            checkoutBtn.disabled = (Math.abs(remaining) > 1) || cartTotal <= 0;
+        } else {
+            // If Change is allowed (remaining < 0), we enable checkout.
+            // Only disable if remaining > 0 (underpaid)
+            checkoutBtn.disabled = (remaining > 0) || cartTotal <= 0;
+        }
     }
 
     // --- Checkout ---
@@ -397,9 +751,13 @@
                 id: item.id,
                 quantity: item.quantity,
                 unit_price: item.price,
-                discount: item.discount
+                discount: item.discount,
+                warehouse_id: item.warehouse_id
             })),
-            payment_method: currentPaymentMethod,
+            payments: payments.map(p => ({
+                method: p.method,
+                amount: p.amount
+            })),
             customer_id: customerId || null
     };
 
@@ -478,7 +836,7 @@
                 alert('Error: ' + result.message);
             }
         } catch (error) {
-            alert('System Error');
+            alert('System Error: ' + error.message);
             console.error(error);
         } finally {
             checkoutBtn.disabled = false;
@@ -486,14 +844,13 @@
         }
     }
 
-// Compact confirmation function
-async function confirmStockTransfer(checkResult) {
-    const itemsList = checkResult.items.map(item => 
-        `• ${item.product_name}: ${item.needed} units (${item.from_warehouse})`
-    ).join('<br>');
+    async function confirmStockTransfer(checkResult) {
+        const itemsList = checkResult.items.map(item => 
+            `• ${item.product_name}: ${item.needed} units (From ${item.from_warehouse_name} to ${item.to_warehouse_name})`
+        ).join('<br>');
 
-    const result = await Swal.fire({
-        title: '⚠️ Insufficient Stock',
+        const result = await Swal.fire({
+            title: '⚠️ Insufficient Stock',
         html: `
             <div style="text-align: left;">
                 <p style="color: #dc3545; font-weight: bold;">Missing stock for:</p>
@@ -535,11 +892,13 @@ async function confirmStockTransfer(checkResult) {
         // we need to handle each insufficient item separately
         
         const transferPromises = checkResult.items.map(async (item) => {
-            alert(item)
+            if (!item.from_warehouse_id) {
+                throw new Error(`Critical: No warehouse has enough stock of ${item.product_name}!`);
+            }
             const payload = {
                 product_id: item.product_id,           // $productId
                 from_warehouse_id: item.from_warehouse_id, // $fromId  
-                to_warehouse_id: 1,                    // $toId (Shop 1 - target warehouse)
+                to_warehouse_id: item.to_warehouse_id,   // $toId (Dynamically use selection)
                 quantity: item.needed                  // $quantityToTransfer
             };
 
@@ -598,5 +957,86 @@ async function confirmStockTransfer(checkResult) {
         };
     }
 }
+    // --- Customer Modal Logic ---
+    function openCustomerModal() {
+        const modal = document.getElementById('customer-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        
+        // Focus search input after a short delay to allow transition
+        setTimeout(() => {
+            document.getElementById('customer-search').focus();
+        }, 100);
+    }
+
+    function closeCustomerModal() {
+        const modal = document.getElementById('customer-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.getElementById('customer-search').value = '';
+        filterCustomers(); // Reset filter
+    }
+
+    function filterCustomers() {
+        const term = document.getElementById('customer-search').value.toLowerCase();
+        const items = document.querySelectorAll('.customer-item');
+        let visibleCount = 0;
+
+        items.forEach(item => {
+            // Always show Walk-in unless specifically searching
+            // Check if it is the default walk-in item (no data-name attribute or explicit check)
+            const name = item.dataset.name;
+            
+            if (!name) { // Walk-in customer
+                 if(term === '' || 'walk-in customer'.includes(term)) {
+                     item.style.display = 'flex';
+                     visibleCount++;
+                 } else {
+                     item.style.display = 'none';
+                 }
+                 return;
+            }
+
+            if (name.includes(term)) {
+                item.style.display = 'flex';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        document.getElementById('no-customers').style.display = visibleCount === 0 ? 'block' : 'none';
+    }
+
+    function selectCustomer(id, name, creditBalance) {
+        document.getElementById('customer-select').value = id;
+        document.getElementById('selected-customer-name').innerText = name;
+        
+        updatePaymentOptions(id);
+        closeCustomerModal();
+    }
+
+    function updatePaymentOptions(selectedId = null) {
+        const customerId = selectedId !== null ? selectedId : document.getElementById('customer-select').value;
+        const creditBtn = document.getElementById('btn-credit');
+        
+        if (customerId) {
+            creditBtn.disabled = false;
+            creditBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+            creditBtn.classList.add('hover:bg-slate-50', 'text-slate-700');
+            creditBtn.classList.remove('text-slate-400', 'bg-slate-50');
+            creditBtn.title = "";
+        } else {
+            creditBtn.disabled = true;
+            creditBtn.classList.add('opacity-60', 'cursor-not-allowed', 'text-slate-400', 'bg-slate-50');
+            creditBtn.classList.remove('hover:bg-slate-50', 'text-slate-700');
+            creditBtn.title = "Select a customer first";
+            
+            // Remove any existing credit payments if switching to Walk-in
+            payments = payments.filter(p => p.method !== 'Credit');
+            renderPayments();
+            updatePaymentCalculations();
+        }
+    }
 </script>
 @endsection

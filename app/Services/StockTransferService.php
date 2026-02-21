@@ -49,7 +49,15 @@ class StockTransferService
                 $remainingToTransfer -= $take;
             }
 
-            // 🔥 Optional: record transfer log table here
+            // 🔥 Record transfer log table
+            \App\Models\StockMovement::create([
+                'type' => 'warehouse_transfer',
+                'product_id' => $productId,
+                'from_warehouse_id' => $fromId,
+                'to_warehouse_id' => $toId,
+                'quantity' => $quantityToTransfer,
+                'user_id' => auth()->id()
+            ]);
 
             return true;
         });

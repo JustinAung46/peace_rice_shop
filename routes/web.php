@@ -3,12 +3,14 @@
 
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\StockMovementController;
 use App\Http\Controllers\POSController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AuthController;
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\WarehouseController;
 
 Route::get('login', [AuthController::class, 'login'])->name('login');
 Route::post('login', [AuthController::class, 'authenticate'])->name('authenticate');
@@ -25,6 +27,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post('stock/store', [InventoryController::class, 'storeStock'])->name('inventory.stock.store');
         Route::get('stock/transfer', [InventoryController::class, 'transfer'])->name('inventory.transfer');
         Route::post('stock/transfer/store', [InventoryController::class, 'storeTransfer'])->name('inventory.transfer.store');
+        Route::get('stock/transform', [InventoryController::class, 'transform'])->name('inventory.transform');
+        Route::post('stock/transform/process', [InventoryController::class, 'processTransform'])->name('inventory.transform.process');
+        Route::get('stock/movements', [StockMovementController::class, 'index'])->name('inventory.movements');
+        Route::resource('warehouses', WarehouseController::class);
     });
 
     Route::middleware(['can:view-pos'])->group(function () {
