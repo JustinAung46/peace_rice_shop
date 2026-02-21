@@ -142,46 +142,75 @@
     </div>
 </div>
 
-<!-- Edit Item Modal -->
-<div id="edit-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 transform transition-all scale-100 origin-center">
-        <h3 class="text-lg font-bold text-slate-800 mb-4 flex justify-between">
-            <span id="modal-item-name">Edit Item</span>
-            <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600">&times;</button>
-        </h3>
+<!-- Edit Item Modal with Numpad -->
+<div id="edit-modal" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-center justify-center backdrop-blur-sm p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden">
+        <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+            <h3 class="text-lg font-bold text-slate-800" id="modal-item-name">Edit Item</h3>
+            <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-2">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
         
         <input type="hidden" id="modal-item-id">
         
-        <div class="space-y-4">
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Unit Price (MMK)</label>
-                <input type="number" id="modal-price" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-            </div>
-            
-            <div class="grid grid-cols-2 gap-4">
+        <div class="flex-1 flex flex-col md:flex-row bg-slate-50 relative">
+            <!-- Left side: Inputs -->
+            <div class="p-5 space-y-4 flex-1 border-b md:border-b-0 md:border-r border-slate-200 bg-white">
+                <!-- Unit Price -->
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Quantity</label>
-                    <input type="number" id="modal-qty" step="0.1" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    <label class="block text-sm font-semibold text-slate-600 mb-2 uppercase tracking-wide">Unit Price (MMK)</label>
+                    <div id="input-btn-price" onclick="setActiveInput('price')" class="w-full px-4 py-4 border-2 border-indigo-500 bg-indigo-50 rounded-xl text-right font-black text-2xl text-indigo-900 cursor-pointer transition-colors shadow-inner">0</div>
+                    <input type="hidden" id="modal-price">
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Discount (Total)</label>
-                    <input type="number" id="modal-discount" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Quantity -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-600 mb-2 uppercase tracking-wide">Quantity</label>
+                        <div id="input-btn-qty" onclick="setActiveInput('qty')" class="w-full px-4 py-4 border-2 border-slate-200 bg-white rounded-xl text-center font-bold text-xl text-slate-800 cursor-pointer transition-colors hover:border-indigo-300">0</div>
+                        <input type="hidden" id="modal-qty">
+                    </div>
+                    <!-- Discount -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-600 mb-2 uppercase tracking-wide">Discount</label>
+                        <div id="input-btn-discount" onclick="setActiveInput('discount')" class="w-full px-4 py-4 border-2 border-slate-200 bg-white rounded-xl text-right font-bold text-xl text-slate-800 cursor-pointer transition-colors hover:border-indigo-300">0</div>
+                        <input type="hidden" id="modal-discount">
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <label class="block text-sm font-semibold text-slate-600 mb-2 uppercase tracking-wide">Warehouse</label>
+                    <select id="modal-warehouse" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-slate-50 font-bold text-slate-700 shadow-sm cursor-pointer border-r-8 border-transparent">
+                        @foreach($warehouses as $warehouse)
+                            <option value="{{ $warehouse->id }}">{{ $warehouse->name }}</option>
+                        @endforeach
+                    </select>
                 </div>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Source Warehouse</label>
-                <select id="modal-warehouse" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
-                    @foreach($warehouses as $warehouse)
-                        <option value="{{ $warehouse->id }}">{{ $warehouse->name }}</option>
+            <!-- Right side: Numpad -->
+            <div class="p-5 flex-[0.8] flex flex-col justify-center">
+                <div class="grid grid-cols-3 gap-3">
+                    @foreach([1,2,3,4,5,6,7,8,9] as $num)
+                        <button onclick="appendEditNumpad('{{ $num }}')" class="py-5 bg-white border border-slate-200 rounded-xl text-2xl font-black text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 active:bg-indigo-100 shadow-sm transition-all">{{ $num }}</button>
                     @endforeach
-                </select>
+                    <button onclick="appendEditNumpad('.')" class="py-5 bg-white border border-slate-200 rounded-xl text-3xl font-black text-slate-700 hover:bg-slate-100 active:bg-slate-200 shadow-sm transition-all leading-none pt-2">.</button>
+                    <button onclick="appendEditNumpad('0')" class="py-5 bg-white border border-slate-200 rounded-xl text-2xl font-black text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 active:bg-indigo-100 shadow-sm transition-all">0</button>
+                    <button onclick="popEditNumpad()" class="py-5 bg-red-50 border border-red-100 rounded-xl text-lg font-bold text-red-600 hover:bg-red-100 active:bg-red-200 shadow-sm transition-all flex items-center justify-center">
+                        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z" /></svg>
+                    </button>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mt-3">
+                    <button onclick="clearEditNumpad()" class="py-4 bg-slate-200 border border-slate-300 rounded-xl text-base font-bold text-slate-700 hover:bg-slate-300 active:bg-slate-400 transition-all shadow-sm">Clear</button>
+                    <button onclick="appendEditNumpad('000')" class="py-4 bg-white border border-slate-200 rounded-xl text-lg font-black text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 active:bg-indigo-100 shadow-sm transition-all">000</button>
+                </div>
             </div>
         </div>
 
-        <div class="flex justify-end gap-3 mt-6">
-            <button onclick="closeModal()" class="px-4 py-2 text-slate-600 hover:text-slate-900 font-medium">Cancel</button>
-            <button onclick="saveModal()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Save Changes</button>
+        <div class="p-4 bg-white border-t border-slate-100 flex gap-3">
+            <button onclick="closeModal()" class="flex-1 py-4 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 active:scale-95 transition-all shadow-sm text-lg">Cancel</button>
+            <button onclick="saveModal()" class="flex-[2] py-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 active:scale-95 transition-all text-lg">Save Changes</button>
         </div>
     </div>
 </div>
@@ -438,30 +467,149 @@
     // --- Modal Logic ---
     const modal = document.getElementById('edit-modal');
     
+    let activeEditField = 'price'; // price, qty, discount
+    let editValues = {
+        price: '0',
+        qty: '0',
+        discount: '0'
+    };
+
+    function setActiveInput(field) {
+        activeEditField = field;
+        
+        // Reset styles for active state indicating
+        ['price', 'qty', 'discount'].forEach(f => {
+            const el = document.getElementById('input-btn-' + f);
+            if(f === field) {
+                el.classList.add('border-indigo-500', 'bg-indigo-50', 'text-indigo-900');
+                el.classList.remove('border-slate-200', 'bg-white', 'text-slate-800', 'opacity-50', 'bg-slate-100');
+            } else {
+                el.classList.remove('border-indigo-500', 'bg-indigo-50', 'text-indigo-900');
+                el.classList.add('border-slate-200', 'bg-white', 'text-slate-800');
+                
+                // Keep disabled styling if applicable
+                const customerId = document.getElementById('customer-select').value;
+                if (f === 'price' && !customerId) {
+                    el.classList.add('opacity-50', 'bg-slate-100', 'cursor-not-allowed');
+                }
+            }
+        });
+    }
+
+    function updateEditDisplay() {
+        // Format with commas if it's purely a big number
+        const formatNum = (val, field) => {
+            if(!val) return '0';
+            if (val.includes('.') && field === 'qty') {
+               // Allow typing decimal points smoothly for qty
+               return val;
+            }
+            if (val.endsWith('.')) return val; 
+            
+            let num = parseFloat(val);
+            if(isNaN(num)) return '0';
+            
+            // For price and discount format nicely assuming they are large MMK values
+            if (field !== 'qty') {
+               return parseInt(num).toLocaleString();
+            }
+            return Number.isInteger(num) ? num.toString() : num.toString();
+        }
+
+        document.getElementById('input-btn-price').innerText = formatNum(editValues.price, 'price');
+        document.getElementById('input-btn-qty').innerText = formatNum(editValues.qty, 'qty');
+        document.getElementById('input-btn-discount').innerText = formatNum(editValues.discount, 'discount');
+
+        document.getElementById('modal-price').value = editValues.price || 0;
+        document.getElementById('modal-qty').value = editValues.qty || 0;
+        document.getElementById('modal-discount').value = editValues.discount || 0;
+    }
+
+    function appendEditNumpad(val) {
+        let current = editValues[activeEditField].toString();
+        
+        // If current is just '0' and we type a number (not dot)
+        if (current === '0' && val !== '.' && val !== '000') {
+            current = val;
+        } else if (current === '0' && val === '000') {
+            current = '0';
+        } else {
+            // Prevent multiple decimals
+            if (val === '.' && current.includes('.')) return;
+            // Only Qty makes sense to have decimal
+            if (val === '.' && activeEditField !== 'qty') return;
+
+            // Optional cap length to prevent crazy values?
+            if (current.length > 12) return;
+            current += val;
+        }
+        
+        editValues[activeEditField] = current;
+        updateEditDisplay();
+    }
+
+    function popEditNumpad() {
+        let current = editValues[activeEditField].toString();
+        if (current.length > 1) {
+            current = current.slice(0, -1);
+        } else {
+            current = '0';
+        }
+        editValues[activeEditField] = current;
+        updateEditDisplay();
+    }
+
+    function clearEditNumpad() {
+        editValues[activeEditField] = '0';
+        updateEditDisplay();
+    }
+    
     function openModal(id) {
         const item = cart[id];
         if(!item) return;
 
+        const customerId = document.getElementById('customer-select').value;
+        const priceBtn = document.getElementById('input-btn-price');
+
+        if (!customerId) {
+            // Disable price editing for Walk-in customer
+            priceBtn.onclick = null;
+            priceBtn.classList.add('opacity-50', 'bg-slate-100', 'cursor-not-allowed');
+            priceBtn.title = "Cannot edit unit price for Walk-in customers";
+        } else {
+            // Enable price editing
+            priceBtn.onclick = () => setActiveInput('price');
+            priceBtn.classList.remove('opacity-50', 'bg-slate-100', 'cursor-not-allowed');
+            priceBtn.title = "";
+        }
+
         document.getElementById('modal-item-id').value = id;
         document.getElementById('modal-item-name').innerText = item.name;
-        document.getElementById('modal-price').value = item.price;
-        document.getElementById('modal-qty').value = item.quantity;
-        document.getElementById('modal-discount').value = item.discount;
+        
+        editValues.price = item.price.toString();
+        editValues.qty = item.quantity.toString();
+        editValues.discount = (item.discount || 0).toString();
+        
+        updateEditDisplay();
+        setActiveInput('discount'); // default to editing discount
+
         document.getElementById('modal-warehouse').value = item.warehouse_id || 1;
         
         modal.classList.remove('hidden');
+        modal.classList.add('flex');
     }
 
     function closeModal() {
         modal.classList.add('hidden');
+        modal.classList.remove('flex');
     }
 
     function saveModal() {
         const id = document.getElementById('modal-item-id').value;
-        const price = parseFloat(document.getElementById('modal-price').value);
-        const qty = parseFloat(document.getElementById('modal-qty').value);
-        const discount = parseFloat(document.getElementById('modal-discount').value);
-        const warehouseId = parseInt(document.getElementById('modal-warehouse').value);
+        const price = parseFloat(document.getElementById('modal-price').value) || 0;
+        const qty = parseFloat(document.getElementById('modal-qty').value) || 0;
+        const discount = parseFloat(document.getElementById('modal-discount').value) || 0;
+        const warehouseId = parseInt(document.getElementById('modal-warehouse').value) || 1;
 
         if (cart[id]) {
              if (qty <= 0) {

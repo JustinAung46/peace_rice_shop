@@ -188,7 +188,24 @@ public function transferStock(Request $request, StockTransferService $stockTrans
                     ->lockForUpdate()
                     ->get();
 
-                $remainingDiscount = $discount; // track remaining discount
+                $itemSubtotal = (int) round($unitPrice * $quantityRequested);
+                $itemTotal = $itemSubtotal - $discount;
+                $totalSaleAmount += $itemTotal;
+
+                // 3. Create ONE SaleItem for this product
+                $saleItem = SaleItem::create([
+                    'sale_id' => $sale->id,
+                    'product_id' => $product->id,
+                    'quantity' => $quantityRequested,
+                    'unit_price' => $unitPrice,
+                    'cost_price' => 0, // Update below after calculating from batches
+                    'total_cost' => 0, // Update below after calculating from batches
+                    'subtotal' => $itemSubtotal,
+                    'discount' => $discount,
+                    'total_price' => $itemTotal,
+                ]);
+
+                $totalCostForThisItem = 0;
 
                 foreach ($batches as $batch) {
                     if ($remainingToDeduct <= 0) break;
@@ -198,42 +215,31 @@ public function transferStock(Request $request, StockTransferService $stockTrans
 
                     if ($take <= 0) {
                         continue;
-                    }                    
+                    }
 
                     // Deduct stock
                     $batch->decrement('remaining_quantity', $take);
 
-                    // Subtotal for this slice
-                    $batchSubtotal = (int) round($unitPrice * $take);
+                    $batchCost = (int) $batch->cost_price;
+                    $totalCostForThisItem += (int) round($batchCost * $take);
 
-                    // Smart discount distribution
-                    if ($remainingToDeduct == $take) {
-                        // Last batch → assign all remaining discount
-                        $batchDiscount = $remainingDiscount;
-                    } else {
-                        $ratio = $take / $quantityRequested;
-                        $batchDiscount = (int) round($discount * $ratio);
-                        $remainingDiscount -= $batchDiscount;
-                    }
-
-                    $batchTotal = $batchSubtotal - $batchDiscount;
-
-                    // 3. Create SaleItem for this batch
-                    SaleItem::create([
-                        'sale_id' => $sale->id,
-                        'product_id' => $product->id,
+                    // 4. Create SaleItemBatch to record the FIFO slice
+                    \App\Models\SaleItemBatch::create([
+                        'sale_item_id' => $saleItem->id,
                         'stock_batch_id' => $batch->id,
                         'quantity' => $take,
-                        'unit_price' => $unitPrice,
-                        'cost_price' => (int) $batch->cost_price,
-                        'subtotal' => $batchSubtotal,
-                        'discount' => $batchDiscount,
-                        'total_price' => $batchTotal,
+                        'cost_price' => $batchCost,
                     ]);
 
-                    $totalSaleAmount += $batchTotal;
                     $remainingToDeduct -= $take;
                 }
+
+                // Update the single SaleItem with correct aggregated costs
+                $avgCostPrice = $quantityRequested > 0 ? (int) round($totalCostForThisItem / $quantityRequested) : 0;
+                $saleItem->update([
+                    'cost_price' => $avgCostPrice,
+                    'total_cost' => $totalCostForThisItem,
+                ]);
 
                 if ($remainingToDeduct > 0) { 
                     throw new \Exception("Not enough stock for {$product->name}. Missing: {$remainingToDeduct}");

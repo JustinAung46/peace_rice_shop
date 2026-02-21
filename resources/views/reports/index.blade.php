@@ -55,7 +55,7 @@
                     <th class="px-6 py-3">Invoice</th>
                     <th class="px-6 py-3">Time</th>
                     <th class="px-6 py-3">Customer</th>
-                    <th class="px-6 py-3">Items</th>
+                    <th class="px-6 py-3">Items (Price, Discount)</th>
                     <th class="px-6 py-3 text-right">Revenue</th>
                     <th class="px-6 py-3 text-right">Profit</th>
                 </tr>
@@ -67,9 +67,13 @@
                     <td class="px-6 py-4">{{ $sale->created_at->format('h:i A') }}</td>
                     <td class="px-6 py-4">{{ $sale->customer->name ?? 'Walk-in' }}</td>
                     <td class="px-6 py-4">
-                        <ul class="list-disc list-inside">
+                        <ul class="list-disc list-inside text-xs">
                         @foreach($sale->items as $item)
-                            <li>{{ $item->product->name }} x {{ $item->quantity }}</li>
+                            <li class="mb-1">
+                                <span class="font-semibold">{{ $item->product->name }}</span> x {{ $item->quantity }}
+                                <br>
+                                <span class="text-slate-400 ml-4">Price: {{ number_format($item->unit_price) }} | Dist: {{ number_format($item->discount) }}</span>
+                            </li>
                         @endforeach
                         </ul>
                     </td>
@@ -77,7 +81,7 @@
                     <td class="px-6 py-4 text-right text-emerald-600 font-bold">
                         @php
                             $saleProfit = $sale->items->sum(function($item) {
-                                return $item->total_price - ($item->cost_price * $item->quantity);
+                                return $item->total_price - $item->total_cost;
                             });
                         @endphp
                         {{ number_format($saleProfit) }} K
