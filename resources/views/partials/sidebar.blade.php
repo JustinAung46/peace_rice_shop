@@ -1,4 +1,4 @@
-<div id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 h-full transform transition-all duration-300 ease-in-out lg:static translate-x-0 [.sidebar-closed_&]:-translate-x-full lg:[.sidebar-closed_&]:w-0 lg:[.sidebar-closed_&]:translate-x-0 overflow-hidden">
+<div id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 h-full flex flex-col transform transition-all duration-300 ease-in-out lg:static translate-x-0 [.sidebar-closed_&]:-translate-x-full lg:[.sidebar-closed_&]:w-0 lg:[.sidebar-closed_&]:translate-x-0 overflow-hidden">
     <!-- Logo -->
     <div class="flex items-center justify-center h-16 bg-slate-950 px-4">
         <span class="text-white text-xl font-bold tracking-wider">RICE SHOP</span>

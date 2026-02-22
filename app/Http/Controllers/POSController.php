@@ -20,13 +20,11 @@ class POSController extends Controller
     public function index()
     {
         // Get products with their total available stock in Shop 1
-        $products = Product::with(['category', 'stockBatches' => function($query) {
-            $query->where('remaining_quantity', '>', 0);
-        }])->get()->map(function($product) {
-            $product->stock_count = $product->stockBatches->sum('remaining_quantity');
-            // If no category, assign a default 'Uncategorized' placeholder ID or leave null, handled in frontend
-            return $product;
-        });
+        $products = Product::with(['category'])
+            ->withSum(['stockBatches as stock_count' => function($query) {
+                $query->where('remaining_quantity', '>', 0);
+            }], 'remaining_quantity')
+            ->get();
 
         $categories = Category::all();
         $customers = Customer::all();
