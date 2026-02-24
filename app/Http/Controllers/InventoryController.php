@@ -29,8 +29,8 @@ class InventoryController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'sku' => 'nullable|string|unique:products',
-            'current_selling_price' => 'required|numeric|min:0',
-            'price_per_pyi' => 'nullable|numeric|min:0',
+            'current_selling_price' => 'required|integer|min:0',
+            'price_per_pyi' => 'nullable|integer|min:0',
             'pyi_per_bag' => 'nullable|integer|min:1',
             'category_id' => 'nullable|exists:categories,id',
             'description' => 'nullable|string',
@@ -58,13 +58,15 @@ class InventoryController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'sku' => 'nullable|string|unique:products,sku,' . $inventory->id,
-            'current_selling_price' => 'required|numeric|min:0',
-            'price_per_pyi' => 'nullable|numeric|min:0',
+            'current_selling_price' => 'required|integer|min:0',
+            'price_per_pyi' => 'nullable|integer|min:0',
             'pyi_per_bag' => 'nullable|integer|min:1',
             'category_id' => 'nullable|exists:categories,id',
             'description' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
+
+        $data = $request->except(['image']);
 
         if ($request->hasFile('image')) {
             // Delete old image if it exists
@@ -72,10 +74,10 @@ class InventoryController extends Controller
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($inventory->image_path);
             }
             $imagePath = $request->file('image')->store('products', 'public');
-            $validated['image_path'] = $imagePath;
+            $data['image_path'] = $imagePath;
         }
 
-        $inventory->update($validated);
+        $inventory->update($data);
 
         return redirect()->route('inventory.index')->with('success', 'Product updated successfully.');
     }
@@ -93,8 +95,8 @@ class InventoryController extends Controller
         $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
             'warehouse_id' => 'required|exists:warehouses,id',
-            'quantity' => 'required|numeric|min:0.01',
-            'cost_price' => 'required|numeric|min:0',
+            'quantity' => 'required|integer|min:1',
+            'cost_price' => 'required|integer|min:0',
             'purchase_date' => 'required|date',
             'batch_code' => 'nullable|string'
         ]);
@@ -126,7 +128,7 @@ class InventoryController extends Controller
             'product_id' => 'required|exists:products,id',
             'from_warehouse_id' => 'required|exists:warehouses,id',
             'to_warehouse_id' => 'required|exists:warehouses,id|different:from_warehouse_id',
-            'quantity' => 'required|numeric|min:0.01',
+            'quantity' => 'required|integer|min:1',
         ]);
 
         $transferService->transfer(
@@ -153,7 +155,7 @@ class InventoryController extends Controller
             'warehouse_id' => 'required|exists:warehouses,id',
             'original_product_id' => 'required|exists:products,id',
             'target_product_id' => 'required|exists:products,id|different:original_product_id',
-            'quantity' => 'required|numeric|min:0.01',
+            'quantity' => 'required|integer|min:1',
         ]);
 
         $originalProduct = Product::findOrFail($validated['original_product_id']);

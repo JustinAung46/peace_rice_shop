@@ -41,8 +41,7 @@
 
         <!-- Grid -->
         <div class="flex-1 overflow-y-auto pr-2">
-            <div class="grid grid-cols-3 gap-4" id="product-grid">
-                @foreach($products as $product)
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="product-grid">                @foreach($products as $product)
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 cursor-pointer hover:border-indigo-500 hover:shadow-md transition-all product-card group transform active:scale-95"
                      data-category="{{ $product->category_id ?? 'uncategorized' }}"
                      data-name="{{ strtolower($product->name) }}"
@@ -195,7 +194,7 @@
                     @foreach([1,2,3,4,5,6,7,8,9] as $num)
                         <button onclick="appendEditNumpad('{{ $num }}')" class="py-5 bg-white border border-slate-200 rounded-xl text-2xl font-black text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 active:bg-indigo-100 shadow-sm transition-all">{{ $num }}</button>
                     @endforeach
-                    <button onclick="appendEditNumpad('.')" class="py-5 bg-white border border-slate-200 rounded-xl text-3xl font-black text-slate-700 hover:bg-slate-100 active:bg-slate-200 shadow-sm transition-all leading-none pt-2">.</button>
+                    <button onclick="appendEditNumpad('00')" class="py-5 bg-white border border-slate-200 rounded-xl text-2xl font-black text-slate-700 hover:bg-slate-100 active:bg-slate-200 shadow-sm transition-all leading-none pt-2">00</button>
                     <button onclick="appendEditNumpad('0')" class="py-5 bg-white border border-slate-200 rounded-xl text-2xl font-black text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 active:bg-indigo-100 shadow-sm transition-all">0</button>
                     <button onclick="popEditNumpad()" class="py-5 bg-red-50 border border-red-100 rounded-xl text-lg font-bold text-red-600 hover:bg-red-100 active:bg-red-200 shadow-sm transition-all flex items-center justify-center">
                         <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z" /></svg>
@@ -307,6 +306,7 @@
     let payments = []; // Array of {method, amount}
     let currentEditingPayment = null; // {index, method} or null
     let numpadValue = '0';
+    const emptyMsgTemplate = document.getElementById('empty-cart-msg').cloneNode(true);
     const warehouses = {
         @foreach($warehouses as $w)
             {{ $w->id }}: '{{ addslashes($w->name) }}',
@@ -363,16 +363,17 @@
     // --- Cart Logic ---
 
     function addToCart(id, name, price, maxStock) {
-        if (maxStock <= 0) {
-            alert('Out of stock!');
-            return;
-        }
-
         if (!cart[id]) {
+            // Check stock BEFORE adding to cart object
+            if (maxStock <= 0) {
+                alert('Out of stock!');
+                return;
+            }
+            
             cart[id] = { 
                 id, 
                 name, 
-                price: parseFloat(price), 
+                price: parseInt(price), 
                 quantity: 0, 
                 maxStock, 
                 discount: 0,
@@ -390,23 +391,23 @@
 
     function renderCart() {
         const container = document.getElementById('cart-items');
-        const emptyMsg = document.getElementById('empty-cart-msg');
         const checkoutBtn = document.getElementById('checkout-btn');
         
         container.innerHTML = '';
         
         let subtotal = 0;
         let totalDiscount = 0;
-        const items = Object.values(cart);
+        // Only include items with quantity > 0
+        const items = Object.values(cart).filter(item => item.quantity > 0);
 
         if (items.length === 0) {
-            container.appendChild(emptyMsg);
+            container.appendChild(emptyMsgTemplate.cloneNode(true));
             checkoutBtn.disabled = true;
         } else {
             items.forEach(item => {
                 const itemSubtotal = item.price * item.quantity;
                 subtotal += itemSubtotal;
-                totalDiscount += parseFloat(item.discount || 0);
+                totalDiscount += parseInt(item.discount || 0);
 
                 const div = document.createElement('div');
                 div.className = 'flex justify-between items-center bg-white p-3 rounded-lg border border-slate-100 shadow-sm group hover:border-indigo-300 transition-colors cursor-pointer';
@@ -500,20 +501,11 @@
         // Format with commas if it's purely a big number
         const formatNum = (val, field) => {
             if(!val) return '0';
-            if (val.includes('.') && field === 'qty') {
-               // Allow typing decimal points smoothly for qty
-               return val;
-            }
-            if (val.endsWith('.')) return val; 
             
-            let num = parseFloat(val);
+            let num = parseInt(val);
             if(isNaN(num)) return '0';
             
-            // For price and discount format nicely assuming they are large MMK values
-            if (field !== 'qty') {
-               return parseInt(num).toLocaleString();
-            }
-            return Number.isInteger(num) ? num.toString() : num.toString();
+            return num.toLocaleString();
         }
 
         document.getElementById('input-btn-price').innerText = formatNum(editValues.price, 'price');
@@ -528,17 +520,12 @@
     function appendEditNumpad(val) {
         let current = editValues[activeEditField].toString();
         
-        // If current is just '0' and we type a number (not dot)
-        if (current === '0' && val !== '.' && val !== '000') {
+        // If current is just '0' and we type a number (not 00 or 000)
+        if (current === '0' && val !== '00' && val !== '000') {
             current = val;
-        } else if (current === '0' && val === '000') {
+        } else if (current === '0' && (val === '00' || val === '000')) {
             current = '0';
         } else {
-            // Prevent multiple decimals
-            if (val === '.' && current.includes('.')) return;
-            // Only Qty makes sense to have decimal
-            if (val === '.' && activeEditField !== 'qty') return;
-
             // Optional cap length to prevent crazy values?
             if (current.length > 12) return;
             current += val;
@@ -606,9 +593,9 @@
 
     function saveModal() {
         const id = document.getElementById('modal-item-id').value;
-        const price = parseFloat(document.getElementById('modal-price').value) || 0;
-        const qty = parseFloat(document.getElementById('modal-qty').value) || 0;
-        const discount = parseFloat(document.getElementById('modal-discount').value) || 0;
+        const price = parseInt(document.getElementById('modal-price').value) || 0;
+        const qty = parseInt(document.getElementById('modal-qty').value) || 0;
+        const discount = parseInt(document.getElementById('modal-discount').value) || 0;
         const warehouseId = parseInt(document.getElementById('modal-warehouse').value) || 1;
 
         if (cart[id]) {
@@ -717,7 +704,7 @@
     }
 
     function updateNumpadDisplay() {
-        const val = parseFloat(numpadValue) || 0;
+        const val = parseInt(numpadValue) || 0;
         document.getElementById('payment-numpad-display').innerText = val.toLocaleString();
     }
 
@@ -759,7 +746,7 @@
     }
 
     function confirmPaymentModal() {
-        let finalAmount = parseFloat(numpadValue) || 0;
+        let finalAmount = parseInt(numpadValue) || 0;
         
         // Validation: Cap input to remaining if not Cash
         // Or if user insists "don't allow user to input more than total amount" strictly:
@@ -812,9 +799,9 @@
     function getCartTotal() {
         let subtotal = 0;
         let totalDiscount = 0;
-        Object.values(cart).forEach(item => {
+        Object.values(cart).filter(item => item.quantity > 0).forEach(item => {
             subtotal += item.price * item.quantity;
-            totalDiscount += parseFloat(item.discount || 0);
+            totalDiscount += parseInt(item.discount || 0);
         });
         return subtotal - totalDiscount;
     }

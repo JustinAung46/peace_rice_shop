@@ -40,7 +40,7 @@ class POSController extends Controller
         foreach ($request->cart as $item) {
 
             $product = Product::findOrFail($item['id']);
-            $quantityRequested = (float) $item['quantity'];
+            $quantityRequested = (int) $item['quantity'];
             $warehouseId = $item['warehouse_id'] ?? 1; // Default to Shop 1
 
             $available = StockBatch::where('product_id', $product->id)
@@ -94,7 +94,7 @@ public function transferStock(Request $request, StockTransferService $stockTrans
             'product_id' => 'required|integer',
             'from_warehouse_id' => 'required|integer', 
             'to_warehouse_id' => 'required|integer',
-            'quantity' => 'required|numeric|min:0.01'
+            'quantity' => 'required|integer|min:1'
         ]);
 
         // Call the service with correct parameters
@@ -131,13 +131,13 @@ public function transferStock(Request $request, StockTransferService $stockTrans
         $request->validate([
             'cart' => 'required|array',
             'cart.*.id' => 'required|exists:products,id',
-            'cart.*.quantity' => 'required|numeric|min:0.01',
-            'cart.*.unit_price' => 'required|numeric|min:0', // Manual price override
-            'cart.*.discount' => 'nullable|numeric|min:0', // Line item discount
+            'cart.*.quantity' => 'required|integer|min:1',
+            'cart.*.unit_price' => 'required|integer|min:0', // Manual price override
+            'cart.*.discount' => 'nullable|integer|min:0', // Line item discount
             'cart.*.warehouse_id' => 'nullable|exists:warehouses,id',
             'payments' => 'required|array|min:1',
             'payments.*.method' => 'required|string',
-            'payments.*.amount' => 'required|numeric|min:0',
+            'payments.*.amount' => 'required|integer|min:0',
             'customer_id' => 'nullable|exists:customers,id'
         ]);
 
@@ -167,7 +167,7 @@ public function transferStock(Request $request, StockTransferService $stockTrans
 
             foreach ($request->cart as $item) {
                 $product = Product::findOrFail($item['id']);
-                $quantityRequested = (float) $item['quantity'];
+                $quantityRequested = (int) $item['quantity'];
                 $unitPrice = (int) round($item['unit_price']); // Ensure integer
                 $discount = (int) round($item['discount'] ?? 0); // Ensure integer
                 $warehouseId = $item['warehouse_id'] ?? 1; // Default to Shop 1
@@ -209,7 +209,7 @@ public function transferStock(Request $request, StockTransferService $stockTrans
                     if ($remainingToDeduct <= 0) break;
 
                     // Take only what is needed
-                    $take = min((float)$batch->remaining_quantity, (float)$remainingToDeduct);
+                    $take = min((int)$batch->remaining_quantity, (int)$remainingToDeduct);
 
                     if ($take <= 0) {
                         continue;

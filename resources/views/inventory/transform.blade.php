@@ -79,7 +79,7 @@
             <!-- Quantity to Transform -->
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-slate-700 mb-1">Quantity to Transform (Original Bags) <span class="text-red-500">*</span></label>
-                <input type="number" name="quantity" id="quantity" value="{{ old('quantity') }}" required min="0.01" step="0.01" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g. 1">
+                <input type="number" name="quantity" id="quantity" value="{{ old('quantity') }}" required min="1" step="1" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g. 1">
                 @error('quantity') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
             </div>
             
@@ -109,11 +109,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateSummary() {
         const originalOpt = originalSelect.options[originalSelect.selectedIndex];
         const targetOpt = targetSelect.options[targetSelect.selectedIndex];
-        const qty = parseFloat(quantityInput.value);
+        const qty = parseInt(quantityInput.value);
         
         if (originalOpt && targetOpt && originalOpt.value && targetOpt.value && qty > 0) {
-            const originalPyi = parseFloat(originalOpt.getAttribute('data-pyi')) || 0;
-            const targetPyi = parseFloat(targetOpt.getAttribute('data-pyi')) || 0;
+            const originalPyi = parseInt(originalOpt.getAttribute('data-pyi')) || 0;
+            const targetPyi = parseInt(targetOpt.getAttribute('data-pyi')) || 0;
             
             if (originalPyi > 0 && targetPyi > 0) {
                 const targetQty = (qty * originalPyi) / targetPyi;

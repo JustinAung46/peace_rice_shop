@@ -68,8 +68,6 @@ return new class extends Migration
             $table->string('name');
             $table->string('sku')->unique()->nullable();
             $table->foreignId('category_id')->nullable()->constrained()->onDelete('set null');
-            $table->decimal('stock_count', 10, 2)->default(0);
-            $table->decimal('total_cost_value', 15, 2)->default(0);
             $table->bigInteger('current_selling_price')->default(0);
             $table->bigInteger('price_per_pyi')->nullable();
             $table->decimal('pyi_per_bag', 10, 2)->nullable();
