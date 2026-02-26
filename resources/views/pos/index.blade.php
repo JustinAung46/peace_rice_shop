@@ -39,34 +39,39 @@
             </div>
         </div>
 
-        <!-- Grid -->
         <div class="flex-1 overflow-y-auto pr-2">
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="product-grid">                @foreach($products as $product)
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="product-grid">
+                @foreach($products as $product)
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 cursor-pointer hover:border-indigo-500 hover:shadow-md transition-all product-card group transform active:scale-95"
                      data-category="{{ $product->category_id ?? 'uncategorized' }}"
                      data-name="{{ strtolower($product->name) }}"
-                     onclick="addToCart({{ $product->id }}, '{{ addslashes($product->name) }}', {{ $product->current_selling_price }}, {{ $product->stock_count }})">
-                    
-                    <div class="h-32 bg-slate-50 rounded-xl mb-4 flex items-center justify-center text-slate-300 group-hover:bg-slate-100 transition-colors overflow-hidden">
+                     onclick="openVariantPicker({{ $product->id }}, '{{ addslashes($product->name) }}', {{ $product->variants->toJson() }}, '{{ $product->image_path ? asset('storage/' . $product->image_path) : '' }}')">
+
+                    <div class="h-28 bg-slate-50 rounded-xl mb-3 flex items-center justify-center text-slate-300 group-hover:bg-slate-100 transition-colors overflow-hidden">
                         @if($product->image_path)
                             <img src="{{ asset('storage/' . $product->image_path) }}" class="h-full w-full object-cover">
                         @else
                             <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
                         @endif
                     </div>
-                    
-                    <h3 class="font-bold text-slate-800 text-base mb-2 line-clamp-2 leading-snug">{{ $product->name }}</h3>
-                    <div class="flex justify-between items-end">
-                        <div class="flex flex-col">
-                            <span class="text-indigo-600 font-bold">{{ number_format($product->current_selling_price) }}</span>
-                            <span class="text-xs text-slate-400">MMK / bag</span>
-                            @if($product->price_per_pyi)
-                                <span class="text-xs text-slate-500 mt-0.5">{{ number_format($product->price_per_pyi) }} K/pyi</span>
-                            @endif
+
+                    <h3 class="font-bold text-slate-800 text-base mb-2">{{ $product->name }}</h3>
+                    @if($product->category)
+                    <p class="text-xs text-indigo-600 font-semibold mb-2">{{ $product->category->name }}</p>
+                    @endif
+
+                    <div class="space-y-1">
+                        @foreach($product->variants->take(3) as $variant)
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-600 truncate">{{ $variant->name }}</span>
+                            <span class="{{ $variant->stock_count > 0 ? 'text-emerald-600' : 'text-red-500' }} font-bold ml-2 shrink-0">
+                                {{ $variant->stock_count }} {{ $variant->unit_label }}
+                            </span>
                         </div>
-                        <span class="text-xs {{ $product->stock_count > 0 ? 'text-emerald-600 bg-emerald-50' : 'text-red-600 bg-red-50' }} px-2 py-1 rounded-full border {{ $product->stock_count > 0 ? 'border-emerald-100' : 'border-red-100' }}">
-                            {{ $product->stock_count + 0 }} Left
-                        </span>
+                        @endforeach
+                        @if($product->variants->count() > 3)
+                        <p class="text-xs text-slate-400">+{{ $product->variants->count() - 3 }} more variants...</p>
+                        @endif
                     </div>
                 </div>
                 @endforeach
@@ -140,6 +145,124 @@
         </div>
     </div>
 </div>
+
+<!-- ═══ Variant Picker Modal ═══════════════════════════════════════════════ -->
+<!-- ═══ Variant Picker Modal ═══════════════════════════════════════════════ -->
+<div id="variant-picker-modal" class="fixed inset-0 bg-black/40 z-[80] hidden items-center justify-center p-4 md:p-6 transition-all duration-300">
+    <!-- Remove my-4 md:my-6 from here and add overflow-hidden to contain the scroll -->
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl lg:max-w-4xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-300 max-h-[90vh] md:max-h-[95vh]">
+        
+        <!-- Header with Close Button - Fixed -->
+        <div class="flex items-center justify-between p-5 md:p-7 border-b border-slate-100 flex-shrink-0">
+            <h3 id="variant-picker-title" class="text-lg md:text-xl lg:text-2xl font-bold text-slate-900 truncate pr-4"></h3>
+            <button onclick="closeVariantPicker()" class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-all flex-shrink-0">
+                <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Content - Make this scrollable when needed -->
+        <div class="flex-1 overflow-y-auto p-5 md:p-7">
+            <div class="flex flex-col lg:flex-row gap-8 lg:gap-10">
+                <!-- Product Image -->
+                <div class="lg:w-1/3 flex justify-center">
+                    <div class="w-48 h-48 md:w-56 md:h-56 lg:w-full lg:h-48 rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 shadow-md flex-shrink-0">
+                        <img id="picker-img" src="" alt="" class="w-full h-full object-cover hidden">
+                        <div id="picker-img-placeholder" class="w-full h-full flex items-center justify-center bg-slate-50">
+                            <svg class="w-16 h-16 md:w-20 md:h-20 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Options Section -->
+                <div class="flex-1 space-y-6">
+                    <!-- Price Mode Selection -->
+                    <section>
+                        <h4 class="text-xs md:text-sm font-medium text-slate-500 uppercase tracking-wider mb-3">Price Type</h4>
+                        <div class="flex gap-2 p-1 bg-slate-100 rounded-xl">
+                            <button id="price-mode-wholesale" onclick="setPriceMode('wholesale')" 
+                                class="flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all bg-white text-indigo-700 shadow-sm border border-indigo-100">
+                                Wholesale
+                            </button>
+                            <button id="price-mode-retail" onclick="setPriceMode('retail')" 
+                                class="flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all text-slate-600 hover:bg-slate-50">
+                                Retail
+                            </button>
+                        </div>
+                    </section>
+
+                    <!-- Variant Selection - Remove max height, let it grow naturally -->
+                    <section>
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="text-xs md:text-sm font-medium text-slate-500 uppercase tracking-wider">Select Variant</h4>
+                            <span id="picker-stock-label" class="text-xs font-medium text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full hidden"></span>
+                        </div>
+                        <!-- Remove max-h and overflow, let parent handle scrolling -->
+                        <div id="variant-picker-pills" class="grid grid-cols-2 sm:grid-cols-3 gap-3 pr-2">
+                            <!-- Variants injected by JS -->
+                        </div>
+                        <!-- Variant count hint -->
+                        <div id="variant-count-hint" class="text-xs text-slate-400 mt-3 text-right hidden">
+                            <span id="selected-variant-count">0</span>/10 variants
+                        </div>
+                    </section>
+
+                    <!-- Quantity & Price Summary -->
+                    <section class="bg-slate-50 rounded-2xl p-4 md:p-5 flex items-center justify-between">
+                        <div class="flex items-center bg-white rounded-xl border border-slate-200">
+                            <button onclick="pickerChangeQty(-1)" class="w-10 h-10 md:w-12 md:h-12 rounded-xl text-slate-600 hover:bg-slate-50 transition-all flex items-center justify-center">
+                                <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 12H4"/>
+                                </svg>
+                            </button>
+                            <span id="picker-qty-display" class="w-12 text-center text-lg md:text-xl font-bold text-slate-900">1</span>
+                            <button onclick="pickerChangeQty(1)" class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition-all flex items-center justify-center">
+                                <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] md:text-xs font-medium text-slate-400 uppercase tracking-wider">Total</p>
+                            <p id="picker-total-display" class="text-xl md:text-2xl lg:text-3xl font-bold text-slate-900">0 MMK</p>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Actions - Fixed at bottom -->
+        <div class="p-5 md:p-5 lg:p-7 border-t border-slate-100 bg-white flex-shrink-0">
+            <div class="flex gap-3">
+                <button onclick="closeVariantPicker()" 
+                    class="flex-1 py-4 md:py-5 bg-white text-slate-700 rounded-xl md:rounded-2xl font-semibold text-base md:text-lg border-2 border-slate-200 hover:bg-slate-50 hover:border-slate-300 active:scale-[0.99] transition-all">
+                    Cancel
+                </button>
+                <button id="picker-add-btn" onclick="pickerAddToCart()" disabled
+                    class="flex-1 py-4 md:py-5 bg-indigo-600 text-white rounded-xl md:rounded-2xl font-semibold text-base md:text-lg flex items-center justify-center gap-2 hover:bg-indigo-700 active:scale-[0.99] transition-all disabled:opacity-50 disabled:hover:bg-indigo-600 disabled:active:scale-100 shadow-lg shadow-indigo-200">
+                    <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Add to Cart
+                </button>
+            </div>
+            <p id="picker-validation-msg" class="text-center text-rose-500 text-xs md:text-sm font-medium mt-3 opacity-0 transition-opacity">
+                Please select a variant
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Template for variant pill (to be used by JavaScript) -->
+<template id="variant-pill-template">
+    <button class="variant-pill relative px-3 py-2.5 text-xs font-medium rounded-xl border transition-all duration-200 text-left">
+        <span class="variant-name block truncate"></span>
+        <span class="variant-price text-[10px] opacity-75"></span>
+    </button>
+</template>
 
 <!-- Edit Item Modal with Numpad -->
 <div id="edit-modal" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-center justify-center backdrop-blur-sm p-4">
@@ -360,29 +483,378 @@
         filterProducts();
     }
 
-    // --- Cart Logic ---
+    // ─── Variant Picker State ─────────────────────────────────────────────────
+    let pickerProductId   = null;
+    let pickerProductName = null;
+    let pickerVariants    = [];
+    let pickerSelectedId  = null;
+    let pickerQty         = 1;
+    let pickerPriceMode   = 'wholesale'; // 'wholesale' or 'retail'
 
-    function addToCart(id, name, price, maxStock) {
-        if (!cart[id]) {
-            // Check stock BEFORE adding to cart object
-            if (maxStock <= 0) {
+    function setPriceMode(mode) {
+        pickerPriceMode = mode;
+        
+        // Reset selection when switching modes
+        pickerSelectedId = null;
+        pickerQty = 1;
+
+        // Update UI
+        const wholesaleBtn = document.getElementById('price-mode-wholesale');
+        const retailBtn = document.getElementById('price-mode-retail');
+        
+        if (mode === 'wholesale') {
+            wholesaleBtn.className = 'flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all bg-white text-indigo-700 shadow-sm border border-indigo-100';
+            retailBtn.className = 'flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all text-slate-600 hover:bg-slate-50';
+        } else {
+            retailBtn.className = 'flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all bg-white text-indigo-700 shadow-sm border border-indigo-100';
+            wholesaleBtn.className = 'flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all text-slate-600 hover:bg-slate-50';
+        }
+        
+        // Reset Picker UI for cleared selection
+        document.getElementById('picker-qty-display').innerText = '1';
+        document.getElementById('picker-stock-label').classList.add('hidden');
+        document.getElementById('picker-add-btn').disabled = true;
+        document.getElementById('picker-add-btn').innerHTML = `
+            <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Add to Cart
+        `;
+        document.getElementById('picker-validation-msg').style.opacity = '0';
+        pickerUpdateTotal();
+
+        // Re-render variants to update list and prices
+        renderPickerVariants();
+    }
+
+    function renderPickerVariants() {
+        const pillsContainer = document.getElementById('variant-picker-pills');
+        pillsContainer.innerHTML = '';
+        
+        pickerVariants.slice(0, 10).forEach(v => {
+            // Calculate price based on mode
+            let displayPrice = 0;
+            let isRetailPossible = false;
+            
+            if (pickerPriceMode === 'wholesale') {
+                displayPrice = v.selling_price;
+            } else {
+                if (v.price_per_pyi && v.pyi_per_bag) {
+                    displayPrice = parseInt(v.price_per_pyi) * parseInt(v.pyi_per_bag);
+                    isRetailPossible = true;
+                } else {
+                    // Hide if retail is selected but not possible for this variant
+                    return; 
+                }
+            }
+
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.dataset.variantId = v.id;
+            const outOfStock = v.stock_count <= 0;
+            
+            let cardClasses = 'variant-pill relative w-full px-3 py-3 text-xs md:text-sm font-medium rounded-xl border transition-all duration-200 text-left ';
+            
+            if (outOfStock) {
+                cardClasses += 'border-slate-200 bg-slate-50 opacity-50 cursor-not-allowed';
+            } else {
+                cardClasses += 'border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50 cursor-pointer';
+                if (parseInt(pickerSelectedId) === parseInt(v.id)) {
+                    cardClasses = 'variant-pill relative w-full px-3 py-3 text-xs md:text-sm font-medium rounded-xl border-indigo-600 bg-indigo-50 ring-2 ring-indigo-600/20 shadow-md text-left';
+                }
+            }
+            
+            card.className = cardClasses;
+            card.disabled = outOfStock;
+            
+            let priceText = parseInt(displayPrice).toLocaleString() + ' MMK';
+
+            card.innerHTML = `
+                <div class="flex items-center justify-between mb-1.5">
+                    <span class="variant-name font-semibold text-slate-800 text-sm md:text-base">${v.name}</span>
+                    ${outOfStock ? '<span class="text-[10px] font-medium text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded-full">Sold Out</span>' : ''}
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="variant-price text-xs md:text-sm font-bold text-indigo-600">${priceText}</span>
+                    <span class="select-check w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center ${parseInt(pickerSelectedId) === parseInt(v.id) ? '' : 'scale-0'} transition-transform duration-200">
+                        <svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </span>
+                </div>
+            `;
+            
+            if (!outOfStock) {
+                card.onclick = () => pickerSelectVariant(v.id);
+            }
+            pillsContainer.appendChild(card);
+        });
+
+        // Add "more variants" indicator if needed
+        if (pickerVariants.length > 10) {
+            const moreIndicator = document.createElement('div');
+            moreIndicator.className = 'col-span-full text-center py-2 text-xs md:text-sm text-slate-400 border-t border-slate-100 mt-2';
+            moreIndicator.textContent = `+${pickerVariants.length - 10} more variants available`;
+            pillsContainer.appendChild(moreIndicator);
+        }
+    }
+
+
+    function openVariantPicker(productId, productName, variants, imageUrl) {
+        pickerProductId   = productId;
+        pickerProductName = productName;
+        pickerVariants    = variants;
+        pickerSelectedId  = null;
+        pickerQty         = 1;
+        pickerPriceMode   = 'wholesale'; // Reset to default
+
+        // Title
+        document.getElementById('variant-picker-title').innerText = productName;
+
+        // Image
+        const img = document.getElementById('picker-img');
+        const placeholder = document.getElementById('picker-img-placeholder');
+        if (imageUrl) {
+            img.src = imageUrl;
+            img.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+        } else {
+            img.classList.add('hidden');
+            placeholder.classList.remove('hidden');
+        }
+
+        // Reset Mode UI
+        setPriceMode('wholesale');
+
+        // Reset UI
+        document.getElementById('picker-qty-display').innerText = '1';
+        document.getElementById('picker-total-display').innerText = '0 MMK';
+        document.getElementById('picker-stock-label').classList.add('hidden');
+        document.getElementById('picker-add-btn').disabled = true;
+        document.getElementById('picker-add-btn').innerHTML = `
+            <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Add to Cart
+        `;
+        document.getElementById('picker-validation-msg').style.opacity = '0';
+
+        const modal = document.getElementById('variant-picker-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+
+    function pickerSelectVariant(variantId) {
+        pickerSelectedId = variantId;
+        pickerQty        = 1;
+
+        // Re-render variants to update selection styling
+        renderPickerVariants();
+
+        const v = pickerVariants.find(x => x.id === variantId);
+        if (!v) return;
+
+        // Show stock info with balanced text
+        const stockLabel = document.getElementById('picker-stock-label');
+        stockLabel.innerHTML = `
+            <span class="flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                ${v.stock_count} ${v.unit_label} available
+            </span>
+        `;
+        stockLabel.classList.remove('hidden');
+
+        // Reset qty and update displays
+        document.getElementById('picker-qty-display').innerText = '1';
+        document.getElementById('picker-add-btn').disabled = false;
+        document.getElementById('picker-add-btn').innerHTML = `
+            <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Add ${v.name}
+        `;
+        document.getElementById('picker-validation-msg').style.opacity = '0';
+        pickerUpdateTotal();
+    }
+
+    function pickerChangeQty(delta) {
+        if (!pickerSelectedId) {
+            // Show validation message with animation
+            const msg = document.getElementById('picker-validation-msg');
+            msg.style.opacity = '1';
+            msg.textContent = 'Please select a variant first';
+            
+            // Shake the variant section
+            const variantSection = document.querySelector('#variant-picker-pills');
+            variantSection.classList.add('animate-shake');
+            setTimeout(() => variantSection.classList.remove('animate-shake'), 500);
+            return;
+        }
+        
+        const v = pickerVariants.find(x => x.id === pickerSelectedId);
+        if (!v) return;
+        
+        const newQty = pickerQty + delta;
+        if (newQty < 1 || newQty > v.stock_count) {
+            // Show max/min message
+            const msg = document.getElementById('picker-validation-msg');
+            msg.style.opacity = '1';
+            msg.textContent = newQty < 1 ? 'Minimum quantity is 1' : `Maximum ${v.stock_count} available`;
+            setTimeout(() => msg.style.opacity = '0', 2000);
+            return;
+        }
+        
+        pickerQty = newQty;
+        document.getElementById('picker-qty-display').innerText = pickerQty;
+        pickerUpdateTotal();
+    }
+
+    function pickerUpdateTotal() {
+        if (!pickerSelectedId) {
+            document.getElementById('picker-total-display').innerText = '0 MMK';
+            return;
+        }
+        const v = pickerVariants.find(x => x.id === pickerSelectedId);
+        if (!v) return;
+        
+        let unitPrice = 0;
+        if (pickerPriceMode === 'wholesale') {
+            unitPrice = parseInt(v.selling_price);
+        } else {
+            unitPrice = parseInt(v.price_per_pyi) * parseInt(v.pyi_per_bag);
+        }
+
+        const total = unitPrice * pickerQty;
+        document.getElementById('picker-total-display').innerText = total.toLocaleString() + ' MMK';
+    }
+
+    function pickerAddToCart() {
+        if (!pickerSelectedId) {
+            const msg = document.getElementById('picker-validation-msg');
+            msg.style.opacity = '1';
+            msg.textContent = 'Please select a variant';
+            return;
+        }
+        
+        const v = pickerVariants.find(x => x.id === pickerSelectedId);
+        if (!v) return;
+
+        // Add the item
+        const key = 'v' + v.id;
+        
+        let unitPrice = 0;
+        let priceLabel = '';
+        if (pickerPriceMode === 'wholesale') {
+            unitPrice = parseInt(v.selling_price);
+            priceLabel = '(Wholesale)';
+        } else {
+            unitPrice = parseInt(v.price_per_pyi) * parseInt(v.pyi_per_bag);
+            priceLabel = '(Retail)';
+        }
+
+        if (!cart[key]) {
+            cart[key] = {
+                id: key,
+                variant_id: v.id,
+                product_id: pickerProductId,
+                name: pickerProductName + ' – ' + v.name + ' ' + priceLabel,
+                price: unitPrice,
+                quantity: 0,
+                maxStock: v.stock_count,
+                discount: 0,
+                warehouse_id: 1,
+                unit_label: v.unit_label,
+            };
+        } else {
+            // Update existing item in cart if price changed (retail/wholesale switch)
+            cart[key].price = unitPrice;
+            cart[key].name = pickerProductName + ' – ' + v.name + ' ' + priceLabel;
+        }
+        
+        const spaceLeft = cart[key].maxStock - cart[key].quantity;
+        const toAdd = Math.min(pickerQty, spaceLeft);
+        
+        if (toAdd <= 0) { 
+            Swal.fire({
+                icon: 'warning',
+                title: 'Limit Reached',
+                text: 'You already have all available stock in your bag.',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+            });
+            return; 
+        }
+        
+        cart[key].quantity += toAdd;
+        renderCart();
+        closeVariantPicker();
+        
+        // Show success toast
+        Swal.fire({
+            icon: 'success',
+            title: 'Added to Bag!',
+            text: `${toAdd} × ${v.name} added successfully`,
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true,
+        });
+    }
+
+    function closeVariantPicker() {
+        const modal = document.getElementById('variant-picker-modal');
+        modal.classList.add('opacity-0');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex', 'opacity-0');
+        }, 300);
+    }
+
+    // Add shake animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+            20%, 40%, 60%, 80% { transform: translateX(2px); }
+        }
+        .animate-shake {
+            animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+        }
+    `;
+    document.head.appendChild(style);
+
+    // ─── Cart Logic ──────────────────────────────────────────────────────────
+    // Cart keyed by variant ID (prefixed: 'v{id}')
+    function addToCart(productId, productName, variant) {
+        const key = 'v' + variant.id;
+        if (!cart[key]) {
+            if (variant.stock_count <= 0) {
                 alert('Out of stock!');
                 return;
             }
-            
-            cart[id] = { 
-                id, 
-                name, 
-                price: parseInt(price), 
-                quantity: 0, 
-                maxStock, 
+            cart[key] = {
+                id: key,          // unique cart key
+                variant_id: variant.id,
+                product_id: productId,
+                name: productName + ' – ' + variant.name,
+                price: parseInt(variant.selling_price),
+                quantity: 0,
+                maxStock: variant.stock_count,
                 discount: 0,
-                warehouse_id: 1 // Default to Shop 1
+                warehouse_id: 1,
+                unit_label: variant.unit_label,
             };
         }
-
-        if (cart[id].quantity < maxStock) {
-            cart[id].quantity++;
+        if (cart[key].quantity < cart[key].maxStock) {
+            cart[key].quantity++;
             renderCart();
         } else {
             alert('Max stock reached!');
@@ -425,9 +897,9 @@
                         </div>
                     </div>
                     <div class="flex items-center space-x-2">
-                        <button onclick="updateQty(${item.id}, -1)" class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 active:bg-slate-300 flex items-center justify-center text-2xl leading-none pb-1 transition-colors">-</button>
+                        <button onclick="updateQty('${item.id}', -1)" class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 active:bg-slate-300 flex items-center justify-center text-2xl leading-none pb-1 transition-colors">-</button>
                         <span class="text-base font-bold w-6 text-center text-slate-800">${item.quantity}</span>
-                        <button onclick="updateQty(${item.id}, 1)" class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 hover:bg-indigo-200 active:bg-indigo-300 flex items-center justify-center text-2xl leading-none pb-1 transition-colors">+</button>
+                        <button onclick="updateQty('${item.id}', 1)" class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 hover:bg-indigo-200 active:bg-indigo-300 flex items-center justify-center text-2xl leading-none pb-1 transition-colors">+</button>
                     </div>
                 `;
                 container.appendChild(div);
@@ -444,13 +916,13 @@
         updatePaymentCalculations();
     }
 
-    function updateQty(id, change) {
-        if (cart[id]) {
-            const newQty = cart[id].quantity + change;
-            if (newQty > 0 && newQty <= cart[id].maxStock) {
-                cart[id].quantity = newQty;
+    function updateQty(key, change) {
+        if (cart[key]) {
+            const newQty = cart[key].quantity + change;
+            if (newQty > 0 && newQty <= cart[key].maxStock) {
+                cart[key].quantity = newQty;
             } else if (newQty <= 0) {
-                delete cart[id];
+                delete cart[key];
             }
             renderCart();
         }
@@ -592,24 +1064,24 @@
     }
 
     function saveModal() {
-        const id = document.getElementById('modal-item-id').value;
+        const key = document.getElementById('modal-item-id').value;
         const price = parseInt(document.getElementById('modal-price').value) || 0;
         const qty = parseInt(document.getElementById('modal-qty').value) || 0;
         const discount = parseInt(document.getElementById('modal-discount').value) || 0;
         const warehouseId = parseInt(document.getElementById('modal-warehouse').value) || 1;
 
-        if (cart[id]) {
+        if (cart[key]) {
              if (qty <= 0) {
-                delete cart[id];
+                delete cart[key];
             } else {
-                 if(qty > cart[id].maxStock) {
+                 if(qty > cart[key].maxStock) {
                      alert('Exceeds stock!');
                      return; 
                  }
-                cart[id].price = price;
-                cart[id].quantity = qty;
-                cart[id].discount = discount;
-                cart[id].warehouse_id = warehouseId;
+                cart[key].price = price;
+                cart[key].quantity = qty;
+                cart[key].discount = discount;
+                cart[key].warehouse_id = warehouseId;
             }
             renderCart();
             closeModal();
@@ -882,8 +1354,8 @@
         checkoutBtn.innerText = 'Checking Stock...';
 
         const payload = {
-            cart: Object.values(cart).map(item => ({
-                id: item.id,
+            cart: Object.values(cart).filter(i => i.quantity > 0).map(item => ({
+                variant_id: item.variant_id,
                 quantity: item.quantity,
                 unit_price: item.price,
                 discount: item.discount,
@@ -894,7 +1366,7 @@
                 amount: p.amount
             })),
             customer_id: customerId || null
-    };
+        };
 
         try {
             // ✅ STEP 1 — CHECK STOCK FIRST

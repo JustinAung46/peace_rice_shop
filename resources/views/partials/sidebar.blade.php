@@ -78,6 +78,18 @@
                     <span class="text-base font-medium">Customers</span>
                 </a>
             </li>
+            <li>
+                <a href="{{ route('credits.index') }}" class="group flex items-center px-4 py-3.5 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors {{ request()->routeIs('credits.*') ? 'bg-slate-800 text-white' : '' }}">
+                    <svg class="w-6 h-6 mr-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                    <span class="text-base font-medium">Credit Report</span>
+                    @php $totalCredit = \App\Models\Customer::where('credit_balance', '>', 0)->count(); @endphp
+                    @if($totalCredit > 0)
+                    <span class="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $totalCredit }}</span>
+                    @endif
+                </a>
+            </li>
             @endcan
             
             @can('view-profit')

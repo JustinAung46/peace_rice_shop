@@ -1,114 +1,108 @@
 @extends('layouts.app')
 
 @section('content')
+@include('partials.alerts')
 <div class="mb-6 flex justify-between items-center">
-    <h1 class="text-2xl font-bold text-slate-800">Add Stock (Inbound)</h1>
-    <a href="{{ route('inventory.index') }}" class="px-4 py-2 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300">Back to List</a>
+    <h1 class="text-2xl font-bold text-slate-800">Add Stock</h1>
+    <a href="{{ route('inventory.index') }}" class="px-4 py-2 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300 font-semibold">Back to Inventory</a>
 </div>
 
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 max-w-2xl mx-auto">
     <form action="{{ route('inventory.stock.store') }}" method="POST">
         @csrf
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Category Filter -->
-            <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-slate-700 mb-1">Filter Products by Category</label>
-                <select id="category_filter" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                    <option value="">All Categories</option>
-                    @foreach($categories as $category)
-                        <option value="{{ $category->id }}">{{ $category->name }}</option>
-                    @endforeach
-                </select>
-            </div>
+        <div class="space-y-5">
 
-            <!-- Product Selection -->
+            {{-- Product --}}
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Select Product</label>
-                <select name="product_id" class="searchable-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
-                    <option value="">Search and select a product...</option>
+                <label class="block text-base font-bold text-slate-700 mb-2">Product <span class="text-red-500">*</span></label>
+                <select name="product_id" id="product-select" onchange="loadVariants(this.value)"
+                    class="w-full px-4 py-3 text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
+                    <option value="">Select Product</option>
                     @foreach($products as $product)
-                        <option value="{{ $product->id }}" data-category="{{ $product->category_id }}">{{ $product->name }} (SKU: {{ $product->sku }})</option>
+                        <option value="{{ $product->id }}" data-variants="{{ $product->variants->toJson() }}">
+                            {{ $product->name }}
+                        </option>
                     @endforeach
                 </select>
             </div>
 
-            <!-- Warehouse Selection -->
+            {{-- Variant --}}
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Destination Warehouse</label>
-                <select name="warehouse_id" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
+                <label class="block text-base font-bold text-slate-700 mb-2">Variant <span class="text-red-500">*</span></label>
+                <select name="product_variant_id" id="variant-select"
+                    class="w-full px-4 py-3 text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white" required>
+                    <option value="">— Select product first —</option>
+                </select>
+            </div>
+
+            {{-- Warehouse --}}
+            <div>
+                <label class="block text-base font-bold text-slate-700 mb-2">Warehouse <span class="text-red-500">*</span></label>
+                <select name="warehouse_id" class="w-full px-4 py-3 text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white" required>
                     @foreach($warehouses as $warehouse)
                         <option value="{{ $warehouse->id }}">{{ $warehouse->name }}</option>
                     @endforeach
                 </select>
             </div>
 
-            <!-- Quantity -->
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Quantity (Bags/Kg)</label>
-                <input type="number" name="quantity" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="0" step="1" required>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {{-- Quantity --}}
+                <div>
+                    <label class="block text-base font-bold text-slate-700 mb-2">Quantity <span class="text-red-500">*</span></label>
+                    <input type="number" name="quantity" min="1" step="1" required
+                        class="w-full px-4 py-3 text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="e.g. 100">
+                </div>
+
+                {{-- Cost Price --}}
+                <div>
+                    <label class="block text-base font-bold text-slate-700 mb-2">Cost Price (MMK) <span class="text-red-500">*</span></label>
+                    <input type="number" name="cost_price" min="0" step="1" required
+                        class="w-full px-4 py-3 text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="e.g. 12000">
+                </div>
             </div>
 
-            <!-- Cost Price -->
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Cost Price per Unit (MMK)</label>
-                <input type="number" name="cost_price" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="0" step="1" required>
-                <p class="text-xs text-slate-500 mt-1">This is crucial for calculating exact profit.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {{-- Purchase Date --}}
+                <div>
+                    <label class="block text-base font-bold text-slate-700 mb-2">Purchase Date <span class="text-red-500">*</span></label>
+                    <input type="date" name="purchase_date" required value="{{ date('Y-m-d') }}"
+                        class="w-full px-4 py-3 text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                {{-- Batch Code --}}
+                <div>
+                    <label class="block text-base font-bold text-slate-700 mb-2">Batch Code <span class="text-slate-400 text-xs">(Optional)</span></label>
+                    <input type="text" name="batch_code"
+                        class="w-full px-4 py-3 text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="e.g. BATCH-001">
+                </div>
             </div>
 
-            <!-- Purchase Date -->
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Purchase Date</label>
-                <input type="date" name="purchase_date" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" value="{{ date('Y-m-d') }}" required>
+            <div class="flex justify-end pt-2">
+                <button type="submit" class="px-10 py-4 bg-indigo-600 text-white rounded-xl font-bold text-lg shadow-md hover:bg-indigo-700 transition-all">
+                    Add Stock
+                </button>
             </div>
-
-            <!-- Batch Code -->
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Batch Code (Optional)</label>
-                <input type="text" name="batch_code" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g. BATCH-001">
-            </div>
-        </div>
-
-        <div class="mt-6 flex justify-end">
-            <button type="submit" class="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
-                Add Stock
-            </button>
         </div>
     </form>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const categoryFilter = document.getElementById('category_filter');
-    const productSelect = document.querySelector('select[name="product_id"]');
-    
-    function filterTomSelect(tomSelectInstance, categoryId) {
-        if (!tomSelectInstance) return;
-        
-        tomSelectInstance.clear();
-        tomSelectInstance.clearOptions();
-        
-        Array.from(tomSelectInstance.input.options).forEach(option => {
-            const optCat = option.getAttribute('data-category');
-            if (!categoryId || optCat === categoryId || !option.value) {
-                tomSelectInstance.addOption({
-                    value: option.value,
-                    text: option.text,
-                    $option: option
-                });
-            }
-        });
-        
-        tomSelectInstance.refreshOptions(false);
-    }
-    
-    setTimeout(() => {
-        const productTs = productSelect.tomselect;
-        if (productTs) {
-            categoryFilter.addEventListener('change', function() {
-                filterTomSelect(productTs, this.value);
-            });
-        }
-    }, 100);
-});
+function loadVariants(productId) {
+    const variantSelect = document.getElementById('variant-select');
+    variantSelect.innerHTML = '<option value="">— Select variant —</option>';
+
+    if (!productId) return;
+
+    const option = document.querySelector(`#product-select option[value="${productId}"]`);
+    if (!option) return;
+
+    const variants = JSON.parse(option.dataset.variants || '[]');
+    variants.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.id;
+        opt.textContent = `${v.name} — ${Number(v.selling_price).toLocaleString()} MMK / ${v.unit_label}`;
+        variantSelect.appendChild(opt);
+    });
+}
 </script>
 @endsection

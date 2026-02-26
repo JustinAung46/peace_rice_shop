@@ -1,181 +1,109 @@
 @extends('layouts.app')
 
 @section('content')
+@include('partials.alerts')
 <div class="mb-6 flex justify-between items-center">
-    <h1 class="text-2xl font-bold text-slate-800">Transform Product Bags</h1>
-    <a href="{{ route('inventory.index') }}" class="px-4 py-2 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300">Back to List</a>
+    <h1 class="text-2xl font-bold text-slate-800">Transform Bag Sizes</h1>
+    <a href="{{ route('inventory.index') }}" class="px-4 py-2 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300 font-semibold">Back to Inventory</a>
 </div>
 
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-    @if(session('error'))
-        <div class="p-4 mb-6 rounded-lg bg-red-50 text-red-700 border border-red-200">
-            {{ session('error') }}
-        </div>
-    @endif
-    @if(session('success'))
-        <div class="p-4 mb-6 rounded-lg bg-green-50 text-green-700 border border-green-200">
-            {{ session('success') }}
-        </div>
-    @endif
+<div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-sm text-amber-800">
+    <strong>Note:</strong> Use this to convert stock from one bag size variant to another (e.g. 12 Pyi bags → 6 Pyi bags). Both source and target variants must have <em>Pyi per Bag</em> set.
+</div>
 
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 max-w-2xl mx-auto">
     <form action="{{ route('inventory.transform.process') }}" method="POST">
         @csrf
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Category Filter -->
-            <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-slate-700 mb-1">Filter Products by Category</label>
-                <select id="category_filter" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                    <option value="">All Categories</option>
-                    @foreach($categories as $category)
-                        <option value="{{ $category->id }}">{{ $category->name }}</option>
-                    @endforeach
-                </select>
-                <p class="text-xs text-slate-500 mt-1">Select a category to quickly narrow down the product lists below.</p>
-            </div>
+        <div class="space-y-5">
 
-            <!-- Warehouse Selection -->
-            <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-slate-700 mb-1">Select Warehouse <span class="text-red-500">*</span></label>
-                <select name="warehouse_id" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                    <option value="">Choose Warehouse</option>
+            {{-- Warehouse --}}
+            <div>
+                <label class="block text-base font-bold text-slate-700 mb-2">Warehouse <span class="text-red-500">*</span></label>
+                <select name="warehouse_id" class="w-full px-4 py-3 text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white" required>
                     @foreach($warehouses as $warehouse)
-                        <option value="{{ $warehouse->id }}" {{ old('warehouse_id') == $warehouse->id ? 'selected' : '' }}>
-                            {{ $warehouse->name }}
-                        </option>
+                        <option value="{{ $warehouse->id }}">{{ $warehouse->name }}</option>
                     @endforeach
                 </select>
-                @error('warehouse_id') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
             </div>
 
-            <!-- Original Product -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {{-- Source Product → Variant --}}
+                <div class="space-y-4 p-4 bg-red-50 rounded-xl border border-red-100">
+                    <h3 class="font-bold text-red-700 text-sm uppercase tracking-wide">Source (From)</h3>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1">Product</label>
+                        <select id="source-product-select" onchange="loadVariants('source', this.value)"
+                            class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="">Select Product</option>
+                            @foreach($products as $product)
+                                <option value="{{ $product->id }}" data-variants="{{ $product->variants->toJson() }}">{{ $product->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1">Variant</label>
+                        <select name="original_variant_id" id="source-variant-select"
+                            class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white" required>
+                            <option value="">— select product first —</option>
+                        </select>
+                    </div>
+                </div>
+
+                {{-- Target Product → Variant --}}
+                <div class="space-y-4 p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                    <h3 class="font-bold text-emerald-700 text-sm uppercase tracking-wide">Target (To)</h3>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1">Product</label>
+                        <select id="target-product-select" onchange="loadVariants('target', this.value)"
+                            class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="">Select Product</option>
+                            @foreach($products as $product)
+                                <option value="{{ $product->id }}" data-variants="{{ $product->variants->toJson() }}">{{ $product->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1">Variant</label>
+                        <select name="target_variant_id" id="target-variant-select"
+                            class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white" required>
+                            <option value="">— select product first —</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Quantity --}}
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Original Product (Full Bag) <span class="text-red-500">*</span></label>
-                <select name="original_product_id" id="original_product_id" required class="searchable-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                    <option value="">Choose Original Product</option>
-                    @foreach($products as $product)
-                        <option value="{{ $product->id }}" data-pyi="{{ $product->pyi_per_bag }}" data-category="{{ $product->category_id }}" {{ old('original_product_id') == $product->id ? 'selected' : '' }}>
-                            {{ $product->name }} ({{ $product->pyi_per_bag }} Pyi/Bag)
-                        </option>
-                    @endforeach
-                </select>
-                @error('original_product_id') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                <label class="block text-base font-bold text-slate-700 mb-2">Quantity to Convert <span class="text-red-500">*</span></label>
+                <input type="number" name="quantity" min="1" step="1" required
+                    class="w-full px-4 py-3 text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Number of source bags to convert">
             </div>
 
-            <!-- Target Product -->
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Target Product (Unit Bag) <span class="text-red-500">*</span></label>
-                <select name="target_product_id" id="target_product_id" required class="searchable-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                    <option value="">Choose Target Product</option>
-                    @foreach($products as $product)
-                        <option value="{{ $product->id }}" data-pyi="{{ $product->pyi_per_bag }}" data-category="{{ $product->category_id }}" {{ old('target_product_id') == $product->id ? 'selected' : '' }}>
-                            {{ $product->name }} ({{ $product->pyi_per_bag }} Pyi/Bag)
-                        </option>
-                    @endforeach
-                </select>
-                @error('target_product_id') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+            <div class="flex justify-end pt-2">
+                <button type="submit" class="px-10 py-4 bg-amber-500 text-white rounded-xl font-bold text-lg shadow-md hover:bg-amber-600 transition-all">
+                    Transform Stock
+                </button>
             </div>
-
-            <!-- Quantity to Transform -->
-            <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-slate-700 mb-1">Quantity to Transform (Original Bags) <span class="text-red-500">*</span></label>
-                <input type="number" name="quantity" id="quantity" value="{{ old('quantity') }}" required min="1" step="1" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g. 1">
-                @error('quantity') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
-            </div>
-            
-            <!-- Summary Output -->
-            <div class="md:col-span-2 bg-indigo-50 rounded-lg p-4 border border-indigo-100 hidden" id="transform-summary">
-                <p class="text-sm text-indigo-800 font-medium">Transformation Summary:</p>
-                <p class="text-indigo-600 mt-1">Transform <span id="summary-qty" class="font-bold">0</span> bags of <span id="summary-original" class="font-bold">-</span> into <span id="summary-target-qty" class="font-bold text-lg">0</span> bags of <span id="summary-target" class="font-bold">-</span>.</p>
-            </div>
-        </div>
-
-        <div class="mt-6 flex justify-end">
-            <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                Process Transformation
-            </button>
         </div>
     </form>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const originalSelect = document.getElementById('original_product_id');
-    const targetSelect = document.getElementById('target_product_id');
-    const quantityInput = document.getElementById('quantity');
-    const summaryDiv = document.getElementById('transform-summary');
-    
-    
-    function updateSummary() {
-        const originalOpt = originalSelect.options[originalSelect.selectedIndex];
-        const targetOpt = targetSelect.options[targetSelect.selectedIndex];
-        const qty = parseInt(quantityInput.value);
-        
-        if (originalOpt && targetOpt && originalOpt.value && targetOpt.value && qty > 0) {
-            const originalPyi = parseInt(originalOpt.getAttribute('data-pyi')) || 0;
-            const targetPyi = parseInt(targetOpt.getAttribute('data-pyi')) || 0;
-            
-            if (originalPyi > 0 && targetPyi > 0) {
-                const targetQty = (qty * originalPyi) / targetPyi;
-                
-                document.getElementById('summary-qty').textContent = qty;
-                document.getElementById('summary-original').textContent = originalOpt.text;
-                document.getElementById('summary-target').textContent = targetOpt.text;
-                document.getElementById('summary-target-qty').textContent = targetQty;
-                
-                summaryDiv.classList.remove('hidden');
-            } else {
-                summaryDiv.classList.add('hidden');
-            }
-        } else {
-            summaryDiv.classList.add('hidden');
-        }
-    }
-    
-    // Setup category filtering for Tom Select instances
-    const categoryFilter = document.getElementById('category_filter');
-    
-    function filterTomSelect(tomSelectInstance, categoryId) {
-        if (!tomSelectInstance) return;
-        
-        tomSelectInstance.clear();
-        tomSelectInstance.clearOptions();
-        
-        let hasOptions = false;
-        
-        Array.from(tomSelectInstance.input.options).forEach(option => {
-            const optCat = option.getAttribute('data-category');
-            if (!categoryId || optCat === categoryId || !option.value) {
-                tomSelectInstance.addOption({
-                    value: option.value,
-                    text: option.text,
-                    $option: option // Pass original option to keep attributes
-                });
-                hasOptions = true;
-            }
-        });
-        
-        tomSelectInstance.refreshOptions(false);
-    }
-    
-    // Wait for Tom Select to be initialized (since it's done globally)
-    setTimeout(() => {
-        const originalTs = originalSelect.tomselect;
-        const targetTs = targetSelect.tomselect;
-        
-        if (originalTs && targetTs) {
-            categoryFilter.addEventListener('change', function() {
-                const selectedCat = this.value;
-                filterTomSelect(originalTs, selectedCat);
-                filterTomSelect(targetTs, selectedCat);
-            });
-            
-            originalTs.on('change', updateSummary);
-            targetTs.on('change', updateSummary);
-        }
-    }, 100);
-
-    quantityInput.addEventListener('input', updateSummary);
-});
+function loadVariants(prefix, productId) {
+    const select = document.getElementById(`${prefix}-variant-select`);
+    select.innerHTML = '<option value="">— select variant —</option>';
+    if (!productId) return;
+    const opt = document.querySelector(`#${prefix}-product-select option[value="${productId}"]`);
+    if (!opt) return;
+    const variants = JSON.parse(opt.dataset.variants || '[]');
+    variants.forEach(v => {
+        const o = document.createElement('option');
+        o.value = v.id;
+        o.textContent = v.pyi_per_bag
+            ? `${v.name} (${v.pyi_per_bag} Pyi/Bag)`
+            : v.name;
+        select.appendChild(o);
+    });
+}
 </script>
 @endsection

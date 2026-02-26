@@ -6,6 +6,7 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\StockMovementController;
 use App\Http\Controllers\POSController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\CreditController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AuthController;
 
@@ -39,6 +40,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('pos/check-stock', [POSController::class, 'checkStock'])->name('pos.checkStock');
         Route::post('pos/transfer-stock', [POSController::class, 'transferStock'])->name('pos.transferStock');
         Route::resource('customers', App\Http\Controllers\CustomerController::class);
+        Route::get('credits', [CreditController::class, 'index'])->name('credits.index');
+        Route::get('credits/{customer}/history', [CreditController::class, 'history'])->name('credits.history');
+        Route::post('credits/payment', [CreditController::class, 'storePayment'])->name('credits.payment.store');
     });
 
     Route::middleware(['can:view-profit'])->group(function () {

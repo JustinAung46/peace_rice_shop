@@ -7,11 +7,14 @@ use Illuminate\Support\Facades\DB;
 
 class StockTransferService
 {
-    public function transfer($productId, $fromId, $toId, $quantityToTransfer)
+    /**
+     * Transfer stock for a specific product variant between warehouses (FIFO).
+     */
+    public function transferVariant($variantId, $fromId, $toId, $quantityToTransfer)
     {
-        return DB::transaction(function () use ($productId, $fromId, $toId, $quantityToTransfer) {
+        return DB::transaction(function () use ($variantId, $fromId, $toId, $quantityToTransfer) {
 
-            $batches = StockBatch::where('product_id', $productId)
+            $batches = StockBatch::where('product_variant_id', $variantId)
                 ->where('warehouse_id', $fromId)
                 ->where('remaining_quantity', '>', 0)
                 ->orderBy('purchase_date', 'asc')
@@ -25,38 +28,37 @@ class StockTransferService
             }
 
             $remainingToTransfer = $quantityToTransfer;
+            $firstBatch = $batches->first();
 
             foreach ($batches as $batch) {
-
                 if ($remainingToTransfer <= 0) break;
 
                 $take = min($batch->remaining_quantity, $remainingToTransfer);
 
-                // Deduct from source
                 $batch->decrement('remaining_quantity', $take);
 
-                // Create batch in destination
                 StockBatch::create([
-                    'product_id' => $productId,
-                    'warehouse_id' => $toId,
-                    'original_quantity' => $take,
+                    'product_id'         => $batch->product_id,
+                    'product_variant_id' => $variantId,
+                    'warehouse_id'       => $toId,
+                    'original_quantity'  => $take,
                     'remaining_quantity' => $take,
-                    'cost_price' => $batch->cost_price,
-                    'purchase_date' => $batch->purchase_date,
-                    'batch_code' => $batch->batch_code ? $batch->batch_code . '-TR' : null,
+                    'cost_price'         => $batch->cost_price,
+                    'purchase_date'      => $batch->purchase_date,
+                    'batch_code'         => $batch->batch_code ? $batch->batch_code . '-TR' : null,
                 ]);
 
                 $remainingToTransfer -= $take;
             }
 
-            // 🔥 Record transfer log table
             \App\Models\StockMovement::create([
-                'type' => 'warehouse_transfer',
-                'product_id' => $productId,
-                'from_warehouse_id' => $fromId,
-                'to_warehouse_id' => $toId,
-                'quantity' => $quantityToTransfer,
-                'user_id' => auth()->id()
+                'type'               => 'warehouse_transfer',
+                'product_id'         => $firstBatch->product_id ?? null,
+                'product_variant_id' => $variantId,
+                'from_warehouse_id'  => $fromId,
+                'to_warehouse_id'    => $toId,
+                'quantity'           => $quantityToTransfer,
+                'user_id'            => auth()->id(),
             ]);
 
             return true;

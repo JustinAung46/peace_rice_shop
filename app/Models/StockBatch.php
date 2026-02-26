@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class StockBatch extends Model
 {
     protected $fillable = [
-        'product_id', 
+        'product_id',
+        'product_variant_id',
         'warehouse_id', 
         'original_quantity', 
         'remaining_quantity', 
@@ -19,6 +20,11 @@ class StockBatch extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function variant()
+    {
+        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
 
     public function warehouse()
