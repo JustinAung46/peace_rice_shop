@@ -22,16 +22,16 @@
     <!-- Product Grid (Middle) -->
     <div class="flex-1 flex flex-col overflow-hidden">
         <!-- Search & Customer Select -->
-        <div class="mb-4 flex gap-4">
+        <div class="mb-4 flex flex-col sm:flex-row gap-3 items-stretch">
             <div class="flex-1 relative">
-                <input type="text" id="search" placeholder="Search products..." class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm">
-                <svg class="w-5 h-5 text-slate-400 absolute left-3 top-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <input type="text" id="search" placeholder="Search products..." class="w-full h-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm">
+                <svg class="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
-            <div class="w-1/3">
-                <button onclick="openCustomerModal()" id="customer-select-btn" class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white shadow-sm flex justify-between items-center hover:border-indigo-500 hover:ring-2 hover:ring-indigo-200 transition-all group">
-                    <div class="flex flex-col items-start">
-                        <span class="text-xs text-slate-400 font-medium">Customer</span>
-                        <span id="selected-customer-name" class="font-bold text-slate-800">Walk-in Customer</span>
+            <div class="w-full sm:w-1/3">
+                <button onclick="openCustomerModal()" id="customer-select-btn" class="w-full h-full px-4 py-2 rounded-xl border border-slate-200 bg-white shadow-sm flex justify-between items-center hover:border-indigo-500 hover:ring-2 hover:ring-indigo-200 transition-all group">
+                    <div class="flex flex-col items-start leading-tight">
+                        <span class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Customer</span>
+                        <span id="selected-customer-name" class="font-bold text-slate-800 truncate max-w-[120px]">Walk-in Customer</span>
                     </div>
                     <svg class="w-5 h-5 text-slate-400 group-hover:text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                 </button>
@@ -40,7 +40,7 @@
         </div>
 
         <div class="flex-1 overflow-y-auto pr-2">
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="product-grid">
+            <div class="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-4" id="product-grid">
                 @foreach($products as $product)
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 cursor-pointer hover:border-indigo-500 hover:shadow-md transition-all product-card group transform active:scale-95"
                      data-category="{{ $product->category_id ?? 'uncategorized' }}"
@@ -112,7 +112,7 @@
                     <span id="cart-total">0 MMK</span>
                 </div>
             </div>
-            
+
             <!-- Payment Methods Selection -->
             <div class="grid grid-cols-3 gap-2 mb-3">
                 <button onclick="addPayment('Cash')" id="btn-cash" class="py-2.5 px-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 active:scale-95 transition-all shadow-sm flex flex-col items-center gap-1">
@@ -150,8 +150,8 @@
 <!-- ═══ Variant Picker Modal ═══════════════════════════════════════════════ -->
 <div id="variant-picker-modal" class="fixed inset-0 bg-black/40 z-[80] hidden items-center justify-center p-4 md:p-6 transition-all duration-300">
     <!-- Remove my-4 md:my-6 from here and add overflow-hidden to contain the scroll -->
-    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl lg:max-w-4xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-300 max-h-[90vh] md:max-h-[95vh]">
-        
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl lg:max-w-4xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-300 max-h-[90vh] md:max-h-[85vh]">
+
         <!-- Header with Close Button - Fixed -->
         <div class="flex items-center justify-between p-5 md:p-7 border-b border-slate-100 flex-shrink-0">
             <h3 id="variant-picker-title" class="text-lg md:text-xl lg:text-2xl font-bold text-slate-900 truncate pr-4"></h3>
@@ -183,11 +183,11 @@
                     <section>
                         <h4 class="text-xs md:text-sm font-medium text-slate-500 uppercase tracking-wider mb-3">Price Type</h4>
                         <div class="flex gap-2 p-1 bg-slate-100 rounded-xl">
-                            <button id="price-mode-wholesale" onclick="setPriceMode('wholesale')" 
+                            <button id="price-mode-wholesale" onclick="setPriceMode('wholesale')"
                                 class="flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all bg-white text-indigo-700 shadow-sm border border-indigo-100">
                                 Wholesale
                             </button>
-                            <button id="price-mode-retail" onclick="setPriceMode('retail')" 
+                            <button id="price-mode-retail" onclick="setPriceMode('retail')"
                                 class="flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all text-slate-600 hover:bg-slate-50">
                                 Retail
                             </button>
@@ -237,7 +237,7 @@
         <!-- Footer Actions - Fixed at bottom -->
         <div class="p-5 md:p-5 lg:p-7 border-t border-slate-100 bg-white flex-shrink-0">
             <div class="flex gap-3">
-                <button onclick="closeVariantPicker()" 
+                <button onclick="closeVariantPicker()"
                     class="flex-1 py-4 md:py-5 bg-white text-slate-700 rounded-xl md:rounded-2xl font-semibold text-base md:text-lg border-2 border-slate-200 hover:bg-slate-50 hover:border-slate-300 active:scale-[0.99] transition-all">
                     Cancel
                 </button>
@@ -273,9 +273,9 @@
                 <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
         </div>
-        
+
         <input type="hidden" id="modal-item-id">
-        
+
         <div class="flex-1 flex flex-col md:flex-row bg-slate-50 relative">
             <!-- Left side: Inputs -->
             <div class="p-5 space-y-4 flex-1 border-b md:border-b-0 md:border-r border-slate-200 bg-white">
@@ -285,7 +285,7 @@
                     <div id="input-btn-price" onclick="setActiveInput('price')" class="w-full px-4 py-4 border-2 border-indigo-500 bg-indigo-50 rounded-xl text-right font-black text-2xl text-indigo-900 cursor-pointer transition-colors shadow-inner">0</div>
                     <input type="hidden" id="modal-price">
                 </div>
-                
+
                 <div class="grid grid-cols-2 gap-4">
                     <!-- Quantity -->
                     <div>
@@ -346,7 +346,7 @@
                 <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
         </div>
-        
+
         <div class="p-4 flex-1">
             <!-- Amount Display -->
             <div class="mb-4">
@@ -397,14 +397,14 @@
                 <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
         </div>
-        
+
         <div class="p-4 border-b border-slate-100 bg-white sticky top-0 z-10">
             <div class="relative">
                 <input type="text" id="customer-search" placeholder="Search customers..." class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm" oninput="filterCustomers()">
                 <svg class="w-5 h-5 text-slate-400 absolute left-3 top-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
         </div>
-        
+
         <div class="flex-1 overflow-y-auto p-2 space-y-1" id="customer-list">
             <button onclick="selectCustomer('', 'Walk-in Customer', 0)" class="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-50 flex items-center justify-between group transition-colors customer-item">
                 <span class="font-bold text-slate-800">Walk-in Customer</span>
@@ -470,7 +470,7 @@
 
     function filterCategory(id) {
         activeCategory = id;
-        
+
         // Update styling
         categoryBtns.forEach(btn => {
             if(btn.dataset.id == id) {
@@ -493,7 +493,7 @@
 
     function setPriceMode(mode) {
         pickerPriceMode = mode;
-        
+
         // Reset selection when switching modes
         pickerSelectedId = null;
         pickerQty = 1;
@@ -501,7 +501,7 @@
         // Update UI
         const wholesaleBtn = document.getElementById('price-mode-wholesale');
         const retailBtn = document.getElementById('price-mode-retail');
-        
+
         if (mode === 'wholesale') {
             wholesaleBtn.className = 'flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all bg-white text-indigo-700 shadow-sm border border-indigo-100';
             retailBtn.className = 'flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all text-slate-600 hover:bg-slate-50';
@@ -509,7 +509,7 @@
             retailBtn.className = 'flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all bg-white text-indigo-700 shadow-sm border border-indigo-100';
             wholesaleBtn.className = 'flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all text-slate-600 hover:bg-slate-50';
         }
-        
+
         // Reset Picker UI for cleared selection
         document.getElementById('picker-qty-display').innerText = '1';
         document.getElementById('picker-stock-label').classList.add('hidden');
@@ -530,12 +530,12 @@
     function renderPickerVariants() {
         const pillsContainer = document.getElementById('variant-picker-pills');
         pillsContainer.innerHTML = '';
-        
+
         pickerVariants.slice(0, 10).forEach(v => {
             // Calculate price based on mode
             let displayPrice = 0;
             let isRetailPossible = false;
-            
+
             if (pickerPriceMode === 'wholesale') {
                 displayPrice = v.selling_price;
             } else {
@@ -544,7 +544,7 @@
                     isRetailPossible = true;
                 } else {
                     // Hide if retail is selected but not possible for this variant
-                    return; 
+                    return;
                 }
             }
 
@@ -552,9 +552,9 @@
             card.type = 'button';
             card.dataset.variantId = v.id;
             const outOfStock = v.stock_count <= 0;
-            
+
             let cardClasses = 'variant-pill relative w-full px-3 py-3 text-xs md:text-sm font-medium rounded-xl border transition-all duration-200 text-left ';
-            
+
             if (outOfStock) {
                 cardClasses += 'border-slate-200 bg-slate-50 opacity-50 cursor-not-allowed';
             } else {
@@ -563,10 +563,10 @@
                     cardClasses = 'variant-pill relative w-full px-3 py-3 text-xs md:text-sm font-medium rounded-xl border-indigo-600 bg-indigo-50 ring-2 ring-indigo-600/20 shadow-md text-left';
                 }
             }
-            
+
             card.className = cardClasses;
             card.disabled = outOfStock;
-            
+
             let priceText = parseInt(displayPrice).toLocaleString() + ' MMK';
 
             card.innerHTML = `
@@ -583,7 +583,7 @@
                     </span>
                 </div>
             `;
-            
+
             if (!outOfStock) {
                 card.onclick = () => pickerSelectVariant(v.id);
             }
@@ -686,17 +686,17 @@
             const msg = document.getElementById('picker-validation-msg');
             msg.style.opacity = '1';
             msg.textContent = 'Please select a variant first';
-            
+
             // Shake the variant section
             const variantSection = document.querySelector('#variant-picker-pills');
             variantSection.classList.add('animate-shake');
             setTimeout(() => variantSection.classList.remove('animate-shake'), 500);
             return;
         }
-        
+
         const v = pickerVariants.find(x => x.id === pickerSelectedId);
         if (!v) return;
-        
+
         const newQty = pickerQty + delta;
         if (newQty < 1 || newQty > v.stock_count) {
             // Show max/min message
@@ -706,7 +706,7 @@
             setTimeout(() => msg.style.opacity = '0', 2000);
             return;
         }
-        
+
         pickerQty = newQty;
         document.getElementById('picker-qty-display').innerText = pickerQty;
         pickerUpdateTotal();
@@ -719,7 +719,7 @@
         }
         const v = pickerVariants.find(x => x.id === pickerSelectedId);
         if (!v) return;
-        
+
         let unitPrice = 0;
         if (pickerPriceMode === 'wholesale') {
             unitPrice = parseInt(v.selling_price);
@@ -738,13 +738,13 @@
             msg.textContent = 'Please select a variant';
             return;
         }
-        
+
         const v = pickerVariants.find(x => x.id === pickerSelectedId);
         if (!v) return;
 
         // Add the item
         const key = 'v' + v.id;
-        
+
         let unitPrice = 0;
         let priceLabel = '';
         if (pickerPriceMode === 'wholesale') {
@@ -773,11 +773,11 @@
             cart[key].price = unitPrice;
             cart[key].name = pickerProductName + ' – ' + v.name + ' ' + priceLabel;
         }
-        
+
         const spaceLeft = cart[key].maxStock - cart[key].quantity;
         const toAdd = Math.min(pickerQty, spaceLeft);
-        
-        if (toAdd <= 0) { 
+
+        if (toAdd <= 0) {
             Swal.fire({
                 icon: 'warning',
                 title: 'Limit Reached',
@@ -788,13 +788,13 @@
                 timer: 3000,
                 timerProgressBar: true,
             });
-            return; 
+            return;
         }
-        
+
         cart[key].quantity += toAdd;
         renderCart();
         closeVariantPicker();
-        
+
         // Show success toast
         Swal.fire({
             icon: 'success',
@@ -864,9 +864,9 @@
     function renderCart() {
         const container = document.getElementById('cart-items');
         const checkoutBtn = document.getElementById('checkout-btn');
-        
+
         container.innerHTML = '';
-        
+
         let subtotal = 0;
         let totalDiscount = 0;
         // Only include items with quantity > 0
@@ -886,7 +886,7 @@
                 div.onclick = (e) => {
                     if(!e.target.closest('button')) openModal(item.id);
                 };
-                
+
                 div.innerHTML = `
                     <div class="flex-1 min-w-0 mr-3">
                         <div class="font-medium text-slate-800 text-sm truncate">${item.name}</div>
@@ -908,7 +908,7 @@
         }
 
         const netTotal = subtotal - totalDiscount;
-        
+
         document.getElementById('cart-subtotal').innerText = subtotal.toLocaleString() + ' MMK';
         document.getElementById('cart-discount').innerText = totalDiscount > 0 ? '-' + totalDiscount.toLocaleString() + ' MMK' : '0 MMK';
         document.getElementById('cart-total').innerText = netTotal.toLocaleString() + ' MMK';
@@ -939,7 +939,7 @@
 
     // --- Modal Logic ---
     const modal = document.getElementById('edit-modal');
-    
+
     let activeEditField = 'price'; // price, qty, discount
     let editValues = {
         price: '0',
@@ -949,7 +949,7 @@
 
     function setActiveInput(field) {
         activeEditField = field;
-        
+
         // Reset styles for active state indicating
         ['price', 'qty', 'discount'].forEach(f => {
             const el = document.getElementById('input-btn-' + f);
@@ -959,7 +959,7 @@
             } else {
                 el.classList.remove('border-indigo-500', 'bg-indigo-50', 'text-indigo-900');
                 el.classList.add('border-slate-200', 'bg-white', 'text-slate-800');
-                
+
                 // Keep disabled styling if applicable
                 const customerId = document.getElementById('customer-select').value;
                 if (f === 'price' && !customerId) {
@@ -973,10 +973,10 @@
         // Format with commas if it's purely a big number
         const formatNum = (val, field) => {
             if(!val) return '0';
-            
+
             let num = parseInt(val);
             if(isNaN(num)) return '0';
-            
+
             return num.toLocaleString();
         }
 
@@ -991,7 +991,7 @@
 
     function appendEditNumpad(val) {
         let current = editValues[activeEditField].toString();
-        
+
         // If current is just '0' and we type a number (not 00 or 000)
         if (current === '0' && val !== '00' && val !== '000') {
             current = val;
@@ -1002,7 +1002,7 @@
             if (current.length > 12) return;
             current += val;
         }
-        
+
         editValues[activeEditField] = current;
         updateEditDisplay();
     }
@@ -1022,7 +1022,7 @@
         editValues[activeEditField] = '0';
         updateEditDisplay();
     }
-    
+
     function openModal(id) {
         const item = cart[id];
         if(!item) return;
@@ -1044,16 +1044,16 @@
 
         document.getElementById('modal-item-id').value = id;
         document.getElementById('modal-item-name').innerText = item.name;
-        
+
         editValues.price = item.price.toString();
         editValues.qty = item.quantity.toString();
         editValues.discount = (item.discount || 0).toString();
-        
+
         updateEditDisplay();
         setActiveInput('discount'); // default to editing discount
 
         document.getElementById('modal-warehouse').value = item.warehouse_id || 1;
-        
+
         modal.classList.remove('hidden');
         modal.classList.add('flex');
     }
@@ -1076,7 +1076,7 @@
             } else {
                  if(qty > cart[key].maxStock) {
                      alert('Exceeds stock!');
-                     return; 
+                     return;
                  }
                 cart[key].price = price;
                 cart[key].quantity = qty;
@@ -1092,7 +1092,7 @@
         // If called without arg, get from hidden input
         const customerId = selectedId !== null ? selectedId : document.getElementById('customer-select').value;
         const creditBtn = document.getElementById('btn-credit');
-        
+
         if (customerId) {
             creditBtn.disabled = false;
             creditBtn.classList.remove('text-slate-400', 'cursor-not-allowed', 'border-slate-200');
@@ -1103,7 +1103,7 @@
             creditBtn.classList.add('text-slate-400', 'cursor-not-allowed', 'border-slate-200');
             creditBtn.classList.remove('bg-indigo-50', 'text-indigo-700', 'ring-2', 'ring-indigo-500', 'text-slate-600', 'hover:bg-slate-100');
             creditBtn.title = "Select a customer first";
-            
+
             // If credit was in the payments list, remove it
             payments = payments.filter(p => p.method !== 'Credit');
             renderPayments();
@@ -1121,7 +1121,7 @@
 
         // Check if payment method already exists
         const existingIndex = payments.findIndex(p => p.method === method);
-        
+
         if (existingIndex !== -1) {
              // Edit existing
              editPayment(existingIndex);
@@ -1151,11 +1151,11 @@
         const remaining = Math.max(0, cartTotal - currentPaid);
 
         document.getElementById('payment-modal-title').innerText = (currentEditingPayment.index === -1 ? 'Add ' : 'Edit ') + method + ' Payment';
-        
+
         // Default to remaining amount if adding new, or current amount if editing
         numpadValue = (initialAmount !== null ? initialAmount : remaining).toString();
         updateNumpadDisplay();
-        
+
         // Update Quick Button Text
         const quickBtn = document.getElementById('btn-quick-full');
         quickBtn.innerText = (payments.length === 0 || (payments.length === 1 && currentEditingPayment.index !== -1)) ? 'Full Amount' : 'Remaining';
@@ -1196,7 +1196,7 @@
         const cartTotal = getCartTotal();
         const otherPaid = payments.reduce((sum, p, i) => i === (currentEditingPayment?.index ?? -1) ? sum : sum + p.amount, 0);
         const remaining = Math.max(0, cartTotal - otherPaid);
-        
+
         if (type === 'full_remain') {
             numpadValue = remaining.toString();
         }
@@ -1219,24 +1219,24 @@
 
     function confirmPaymentModal() {
         let finalAmount = parseInt(numpadValue) || 0;
-        
+
         // Validation: Cap input to remaining if not Cash
         // Or if user insists "don't allow user to input more than total amount" strictly:
-        // We will interpret "total amount" as "Cart Total". 
+        // We will interpret "total amount" as "Cart Total".
         // Logic: Cannot pay more than what is owed?
         // Let's cap at (CartTotal - OtherPayments) for ALL methods including Cash as per presumed request.
-        // If they want change, they might need to relax this rule. 
+        // If they want change, they might need to relax this rule.
         // But the prompt was specific: "don't allow user to input more than total amount"
-        
+
         const cartTotal = getCartTotal();
         const otherPaid = payments.reduce((sum, p, i) => i === (currentEditingPayment?.index ?? -1) ? sum : sum + p.amount, 0);
         const maxAllowed = Math.max(0, cartTotal - otherPaid);
-        
+
         // STRICT CHECK: If final amount > maxAllowed (plus a small epsilon/tolerance if needed), cap it?
         // Or strictly strictly "Total Amount" (Cart Total).
         // If I put 50,000 for 8,000 item, that is > total amount.
         // I will cap it at maxAllowed.
-        
+
         if (finalAmount > maxAllowed) {
              Swal.fire({
                  icon: 'error',
@@ -1249,7 +1249,7 @@
              });
              return;
         }
-        
+
         if (currentEditingPayment.index === -1) {
             // Addition
             payments.push({
@@ -1263,7 +1263,7 @@
 
         renderPayments();
         updatePaymentCalculations();
-        
+
         // FIX: Ensure modal closes
         setTimeout(() => closePaymentModal(), 50);
     }
@@ -1311,7 +1311,7 @@
 
         document.getElementById('paid-total').innerText = paidTotal.toLocaleString() + ' MMK';
         document.getElementById('remaining-amount').innerText = Math.abs(remaining).toLocaleString() + ' MMK';
-        
+
         const remainingLabel = document.getElementById('remaining-label');
         const remainingEl = document.getElementById('remaining-amount');
 
@@ -1331,10 +1331,10 @@
             remainingEl.className = 'text-emerald-600 font-bold ml-1';
             remainingEl.innerText = '✓';
         }
-        
+
         const checkoutBtn = document.getElementById('checkout-btn');
         const hasCredit = payments.some(p => p.method === 'Credit');
-        
+
         if (hasCredit) {
             checkoutBtn.disabled = (Math.abs(remaining) > 1) || cartTotal <= 0;
         } else {
@@ -1386,7 +1386,7 @@
 
                 // Check if user cancelled or transfer failed
                 if (!transferResult.transferred) {
-                    
+
                     // Show appropriate message
                     if (transferResult.cancelled) {
                         Swal.fire({
@@ -1407,7 +1407,7 @@
                             showConfirmButton: false
                         });
                     }
-                    
+
                     checkoutBtn.disabled = false;
                     checkoutBtn.innerText = 'Checkout';
                     return;
@@ -1452,7 +1452,7 @@
     }
 
     async function confirmStockTransfer(checkResult) {
-        const itemsList = checkResult.items.map(item => 
+        const itemsList = checkResult.items.map(item =>
             `• ${item.product_name}: ${item.needed} units (From ${item.from_warehouse_name} to ${item.to_warehouse_name})`
         ).join('<br>');
 
@@ -1494,17 +1494,17 @@
         // ===========================================
         // CORRECT PAYLOAD FOR YOUR SERVICE
         // ===========================================
-        
+
         // Since service processes ONE product at a time,
         // we need to handle each insufficient item separately
-        
+
         const transferPromises = checkResult.items.map(async (item) => {
             if (!item.from_warehouse_id) {
                 throw new Error(`Critical: No warehouse has enough stock of ${item.product_name}!`);
             }
             const payload = {
                 product_id: item.product_id,           // $productId
-                from_warehouse_id: item.from_warehouse_id, // $fromId  
+                from_warehouse_id: item.from_warehouse_id, // $fromId
                 to_warehouse_id: item.to_warehouse_id,   // $toId (Dynamically use selection)
                 quantity: item.needed                  // $quantityToTransfer
             };
@@ -1541,15 +1541,15 @@
             showConfirmButton: false
         });
 
-        return { 
-            transferred: true, 
+        return {
+            transferred: true,
             cancelled: false,
-            results: transferResults 
+            results: transferResults
         };
 
     } catch (error) {
         Swal.close();
-        
+
         await Swal.fire({
             icon: 'error',
             title: 'Transfer Failed',
@@ -1557,10 +1557,10 @@
             confirmButtonColor: '#dc3545'
         });
 
-        return { 
-            transferred: false, 
-            cancelled: false, 
-            error: error.message 
+        return {
+            transferred: false,
+            cancelled: false,
+            error: error.message
         };
     }
 }
@@ -1569,7 +1569,7 @@
         const modal = document.getElementById('customer-modal');
         modal.classList.remove('hidden');
         modal.classList.add('flex');
-        
+
         // Focus search input after a short delay to allow transition
         setTimeout(() => {
             document.getElementById('customer-search').focus();
@@ -1593,7 +1593,7 @@
             // Always show Walk-in unless specifically searching
             // Check if it is the default walk-in item (no data-name attribute or explicit check)
             const name = item.dataset.name;
-            
+
             if (!name) { // Walk-in customer
                  if(term === '' || 'walk-in customer'.includes(term)) {
                      item.style.display = 'flex';
@@ -1618,7 +1618,7 @@
     function selectCustomer(id, name, creditBalance) {
         document.getElementById('customer-select').value = id;
         document.getElementById('selected-customer-name').innerText = name;
-        
+
         updatePaymentOptions(id);
         closeCustomerModal();
     }
@@ -1626,7 +1626,7 @@
     function updatePaymentOptions(selectedId = null) {
         const customerId = selectedId !== null ? selectedId : document.getElementById('customer-select').value;
         const creditBtn = document.getElementById('btn-credit');
-        
+
         if (customerId) {
             creditBtn.disabled = false;
             creditBtn.classList.remove('opacity-60', 'cursor-not-allowed');
@@ -1638,7 +1638,7 @@
             creditBtn.classList.add('opacity-60', 'cursor-not-allowed', 'text-slate-400', 'bg-slate-50');
             creditBtn.classList.remove('hover:bg-slate-50', 'text-slate-700');
             creditBtn.title = "Select a customer first";
-            
+
             // Remove any existing credit payments if switching to Walk-in
             payments = payments.filter(p => p.method !== 'Credit');
             renderPayments();
