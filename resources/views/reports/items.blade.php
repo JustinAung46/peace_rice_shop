@@ -74,6 +74,7 @@
                     <th class="px-6 py-4 text-center">Total Qty Sold</th>
                     <th class="px-6 py-4 text-right">Total Revenue</th>
                     <th class="px-6 py-4 text-right">Total Cost</th>
+                    <th class="px-6 py-4 text-right">Margin %</th>
                     <th class="px-6 py-4 text-right">Total Profit</th>
                 </tr>
             </thead>
@@ -90,7 +91,12 @@
                         @endif
                     </td>
                     <td class="px-6 py-4">
-                        <div class="text-slate-800 font-semibold text-base">{{ $item->product->name }}</div>
+                        <div class="text-slate-800 font-semibold text-base">
+                            {{ $item->product->name }}
+                            @if($item->variant)
+                                <span class="text-sm text-slate-500 font-normal">({{ $item->variant->name }})</span>
+                            @endif
+                        </div>
                     </td>
                     <td class="px-6 py-4">
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
@@ -102,6 +108,13 @@
                     </td>
                     <td class="px-6 py-4 text-right font-medium text-slate-800">{{ number_format($item->total_revenue) }} K</td>
                     <td class="px-6 py-4 text-right text-slate-500">{{ number_format($item->total_cost) }} K</td>
+                    <td class="px-6 py-4 text-right font-medium text-slate-600">
+                        @php
+                            $profit = $item->total_revenue - $item->total_cost;
+                            $margin = $item->total_revenue > 0 ? ($profit / $item->total_revenue) * 100 : 0;
+                        @endphp
+                        {{ number_format($margin, 1) }}%
+                    </td>
                     <td class="px-6 py-4 text-right font-bold {{ ($item->total_revenue - $item->total_cost) >= 0 ? 'text-emerald-600' : 'text-rose-600' }}">
                         {{ number_format($item->total_revenue - $item->total_cost) }} K
                     </td>

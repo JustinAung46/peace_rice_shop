@@ -11,8 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            $table->dropColumn(['stock_count', 'total_cost_value']);
+        Schema::create('warehouses', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->string('name');
+            $table->string('location')->nullable();
+            $table->timestamps();
         });
     }
 
@@ -21,9 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            $table->integer('stock_count')->default(0);
-            $table->bigInteger('total_cost_value')->default(0);
-        });
+        Schema::dropIfExists('warehouses');
     }
 };

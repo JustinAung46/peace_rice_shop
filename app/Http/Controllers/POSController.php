@@ -25,7 +25,11 @@ class POSController extends Controller
                 $q->where('is_active', true)
                   ->withSum(['stockBatches as stock_count' => function($sq) {
                       $sq->where('remaining_quantity', '>', 0);
-                  }], 'remaining_quantity');
+                  }], 'remaining_quantity')
+                  ->with(['stockBatches' => function($sq) {
+                      $sq->where('remaining_quantity', '>', 0)
+                        ->with('warehouse:id,name');
+                  }]);
             }])
             ->get();
 
@@ -43,7 +47,7 @@ class POSController extends Controller
         foreach ($request->cart as $item) {
             $variantId        = $item['variant_id'];
             $quantityRequested = (int) $item['quantity'];
-            $warehouseId      = $item['warehouse_id'] ?? 1;
+            $warehouseId      = $item['warehouse_id'];
 
             $available = StockBatch::where('product_variant_id', $variantId)
                 ->where('warehouse_id', $warehouseId)
@@ -115,11 +119,12 @@ class POSController extends Controller
             'cart.*.quantity'            => 'required|integer|min:1',
             'cart.*.unit_price'          => 'required|integer|min:0',
             'cart.*.discount'            => 'nullable|integer|min:0',
-            'cart.*.warehouse_id'        => 'nullable|exists:warehouses,id',
+            'cart.*.warehouse_id'        => 'required|exists:warehouses,id',
             'payments'                   => 'required|array|min:1',
             'payments.*.method'          => 'required|string',
             'payments.*.amount'          => 'required|integer|min:0',
             'customer_id'                => 'nullable|exists:customers,id',
+            'sale_type'                  => 'nullable|in:retail,wholesale',
         ]);
 
         try {
@@ -132,11 +137,26 @@ class POSController extends Controller
             $paymentMethods    = collect($request->payments)->pluck('method')->unique()->toArray();
             $paymentMethodLabel = count($paymentMethods) > 1 ? 'Multi' : $paymentMethods[0];
 
+            $totalCreditAmount = collect($request->payments)->where('method', 'Credit')->sum('amount');
+            $totalOtherAmount  = collect($request->payments)->where('method', '!=', 'Credit')->sum('amount');
+
+            $paymentStatus = 'paid';
+            if ($totalCreditAmount > 0) {
+                if ($totalOtherAmount > 0) {
+                    $paymentStatus = 'partial';
+                } else {
+                    $paymentStatus = 'unpaid';
+                }
+            }
+
             $sale = Sale::create([
-                'invoice_number' => $invoiceNumber,
-                'total_amount'   => 0,
-                'payment_method' => $paymentMethodLabel,
-                'customer_id'    => $request->customer_id,
+                'invoice_number'   => $invoiceNumber,
+                'total_amount'     => 0,
+                'payment_method'   => $paymentMethodLabel,
+                'customer_id'      => $request->customer_id,
+                'sale_type'        => $request->sale_type ?? 'retail',
+                'credit_remaining' => $totalCreditAmount,
+                'payment_status'   => $paymentStatus,
             ]);
 
             $totalSaleAmount = 0;
@@ -146,7 +166,7 @@ class POSController extends Controller
                 $quantityRequested = (int) $item['quantity'];
                 $unitPrice        = (int) round($item['unit_price']);
                 $discount         = (int) round($item['discount'] ?? 0);
-                $warehouseId      = $item['warehouse_id'] ?? 1;
+                $warehouseId      = $item['warehouse_id'];
 
                 $itemSubtotal = (int) round($unitPrice * $quantityRequested);
                 $itemTotal    = $itemSubtotal - $discount;

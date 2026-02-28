@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('credit_payments', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('customer_id')->constrained()->onDelete('cascade');
+        Schema::create('credit_allocations', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->unsignedBigInteger('credit_payment_id')->index('credit_allocations_credit_payment_id_foreign');
+            $table->unsignedBigInteger('sale_id')->index('credit_allocations_sale_id_foreign');
             $table->bigInteger('amount');
-            $table->text('note')->nullable();
             $table->timestamps();
         });
     }
@@ -25,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('credit_payments');
+        Schema::dropIfExists('credit_allocations');
     }
 };

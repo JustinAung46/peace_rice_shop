@@ -20,6 +20,6 @@ class Product extends Model
 
     public function stockBatches()
     {
-        return $this->hasManyThrough(StockBatch::class, ProductVariant::class);
+        return $this->hasMany(StockBatch::class);
     }
 }

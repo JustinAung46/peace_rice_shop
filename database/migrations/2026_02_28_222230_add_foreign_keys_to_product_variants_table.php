@@ -11,12 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            $table->boolean('is_active')->default(true)->after('category_id');
-        });
-
         Schema::table('product_variants', function (Blueprint $table) {
-            $table->boolean('is_active')->default(true)->after('price_per_pyi');
+            $table->foreign(['product_id'])->references(['id'])->on('products')->onUpdate('no action')->onDelete('cascade');
         });
     }
 
@@ -26,11 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('product_variants', function (Blueprint $table) {
-            $table->dropColumn('is_active');
-        });
-
-        Schema::table('products', function (Blueprint $table) {
-            $table->dropColumn('is_active');
+            $table->dropForeign('product_variants_product_id_foreign');
         });
     }
 };

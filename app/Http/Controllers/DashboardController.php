@@ -17,20 +17,23 @@ class DashboardController extends Controller
         // 1. Summary Cards (Today)
         $today = Carbon::today();
 
-        $totalSalesToday = Sale::whereDate('created_at', $today)->sum('total_amount');
+        $todayStats = Sale::whereDate('created_at', $today)
+            ->selectRaw('count(*) as count, sum(total_amount) as total_amount')
+            ->first();
+
+        $totalSalesToday = $todayStats->total_amount ?? 0;
+        $totalTransactionsToday = $todayStats->count ?? 0;
         
         $totalBagsSoldToday = SaleItem::whereHas('sale', function ($query) use ($today) {
             $query->whereDate('created_at', $today);
         })->sum('quantity');
 
-        $totalTransactionsToday = Sale::whereDate('created_at', $today)->count();
-
-        // 2. Top Selling Products (All time or today? Let's go with Today for consistency with cards, or maybe This Month? 
-        // "Top-Selling Rice Type (at least 3 types)" - User didn't specify time range, but usually Trending is better. 
-        // Let's do This Month to show broader trends than just today.
+        // 2. Top Selling Products (This Month)
+        $thisMonth = Carbon::now()->startOfMonth();
+        
         $topSellingProducts = SaleItem::select('product_id', DB::raw('sum(quantity) as total_quantity'))
-            ->whereHas('sale', function($q) {
-                $q->whereMonth('created_at', Carbon::now()->month);
+            ->whereHas('sale', function($q) use ($thisMonth) {
+                $q->where('created_at', '>=', $thisMonth);
             })
             ->groupBy('product_id')
             ->orderByDesc('total_quantity')
@@ -38,7 +41,7 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        // If no sales this month, fallback to all time
+        // Fallback to all time if empty
         if ($topSellingProducts->isEmpty()) {
              $topSellingProducts = SaleItem::select('product_id', DB::raw('sum(quantity) as total_quantity'))
                 ->groupBy('product_id')
@@ -48,18 +51,23 @@ class DashboardController extends Controller
                 ->get();
         }
 
+        // 3. Sales Chart Data (Last 30 Days - Aggregated Query)
+        $startDate = Carbon::now()->subDays(29)->startOfDay();
+        
+        $dailySales = Sale::where('created_at', '>=', $startDate)
+            ->selectRaw('DATE(created_at) as date, sum(total_amount) as amount')
+            ->groupBy('date')
+            ->get()
+            ->pluck('amount', 'date');
 
-        // 3. Sales Chart Data (Last 30 Days - Daily Sales Trend)
-        $salesChartData = [];
         $dates = [];
         $sales = [];
 
         for ($i = 29; $i >= 0; $i--) {
-            $date = Carbon::now()->subDays($i)->format('Y-m-d');
-            $dates[] = Carbon::now()->subDays($i)->format('d M');
-            
-            $daySale = Sale::whereDate('created_at', $date)->sum('total_amount');
-            $sales[] = $daySale;
+            $dateObj = Carbon::now()->subDays($i);
+            $dateStr = $dateObj->format('Y-m-d');
+            $dates[] = $dateObj->format('d M');
+            $sales[] = $dailySales[$dateStr] ?? 0;
         }
         
         $salesChartData = [
@@ -67,42 +75,38 @@ class DashboardController extends Controller
             'data' => $sales
         ];
 
-
-        // 4. Sales by Rice Type (For Bar Chart - This Month)
-         // Reuse topSelling but maybe fetching all with names
+        // 4. Sales by Rice Type (This Month) - Reuse logic but more efficient
         $salesByRiceType = SaleItem::select('product_id', DB::raw('sum(quantity) as total_quantity'))
-            ->whereHas('sale', function($q) {
-                 $q->whereMonth('created_at', Carbon::now()->month);
+            ->whereHas('sale', function($q) use ($thisMonth) {
+                 $q->where('created_at', '>=', $thisMonth);
             })
             ->groupBy('product_id')
             ->with('product')
             ->get()
             ->map(function($item) {
                 return [
-                    'name' => $item->product->name,
+                    'name' => $item->product->name ?? 'Unknown',
                     'quantity' => $item->total_quantity
                 ];
             });
 
-        // 5. Stock Status & Alerts
-        // Get all products with their remaining stock (sum of batches)
-        // We can do this by iterating products and summing their batches, or query StockBatch logic.
-        // Product::with('stockBatches')->get() might be heavy if many batches. 
-        // Better:
-        $products = Product::all();
-        $stockStatus = $products->map(function ($product) {
-            $currentStock = $product->stockBatches()->sum('remaining_quantity');
-            return [
-                'id' => $product->id,
-                'name' => $product->name,
-                'sku' => $product->sku,
-                'current_stock' => $currentStock,
-                'low_stock' => $currentStock < 10 // Threshold 10
-            ];
-        })->sortBy('current_stock');
+        // 5. Stock Status & Alerts (Optimized with withSum)
+        $stockStatus = Product::withSum(['stockBatches as current_stock' => function($query) {
+                $query->where('remaining_quantity', '>', 0);
+            }], 'remaining_quantity')
+            ->get()
+            ->map(function ($product) {
+                $currentStock = $product->current_stock ?? 0;
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'sku' => $product->sku,
+                    'current_stock' => $currentStock,
+                    'low_stock' => $currentStock < 10
+                ];
+            })->sortBy('current_stock');
 
         $lowStockAlerts = $stockStatus->where('low_stock', true);
-
 
         // 6. Recent Transactions
         $recentTransactions = Sale::with('items')

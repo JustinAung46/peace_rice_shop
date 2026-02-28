@@ -38,21 +38,33 @@ class WarehouseController extends Controller
 
     public function show(Warehouse $warehouse)
     {
-        // Get stock summary for this warehouse
-        $stockSummary = StockBatch::where('warehouse_id', $warehouse->id)
+        $categories = \App\Models\Category::all();
+        $rows = StockBatch::where('warehouse_id', $warehouse->id)
             ->where('remaining_quantity', '>', 0)
-            ->with('product')
+            ->with(['product.category', 'variant'])
             ->get()
-            ->groupBy('product_id')
+            ->groupBy('product_variant_id')
             ->map(function ($batches) {
+                $first = $batches->first();
                 return [
-                    'product_name' => $batches->first()->product->name,
-                    'total_quantity' => $batches->sum('remaining_quantity'),
-                    'last_purchase_date' => $batches->max('purchase_date'),
+                    'product_id'        => $first->product_id,
+                    'product_name'      => $first->product->name,
+                    'category_id'       => $first->product->category_id,
+                    'category_name'     => optional($first->product->category)->name,
+                    'variant_id'        => $first->product_variant_id,
+                    'variant_name'      => optional($first->variant)->name,
+                    'unit_label'        => optional($first->variant)->unit_label,
+                    'total_quantity'    => $batches->sum('remaining_quantity'),
+                    'last_purchase_date'=> $batches->max('purchase_date'),
                 ];
-            });
+            })
+            ->values();
 
-        return view('warehouses.show', compact('warehouse', 'stockSummary'));
+        return view('warehouses.show', [
+            'warehouse' => $warehouse,
+            'stockRows' => $rows,
+            'categories' => $categories
+        ]);
     }
 
     public function edit(Warehouse $warehouse)

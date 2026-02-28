@@ -114,8 +114,8 @@
                         <th class="text-left px-5 py-3 font-semibold">Invoice</th>
                         <th class="text-left px-5 py-3 font-semibold">Customer</th>
                         <th class="text-right px-5 py-3 font-semibold">Sale Total</th>
-                        <th class="text-right px-5 py-3 font-semibold">Credit Amount</th>
-                        <th class="text-right px-5 py-3 font-semibold">Cash Paid</th>
+                        <th class="text-right px-5 py-3 font-semibold">Status</th>
+                        <th class="text-right px-5 py-3 font-semibold">Credit Remaining</th>
                         <th class="text-center px-5 py-3 font-semibold">Actions</th>
                     </tr>
                 </thead>
@@ -140,9 +140,21 @@
                         </td>
                         <td class="px-5 py-3.5 text-right font-medium text-slate-700">{{ number_format($sale->total_amount) }} Ks</td>
                         <td class="px-5 py-3.5 text-right">
-                            <span class="font-bold text-red-600">{{ number_format($creditAmount) }} Ks</span>
+                            @if($sale->payment_status === 'paid')
+                                <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">Paid</span>
+                            @elseif($sale->payment_status === 'partial')
+                                <span class="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">Partial</span>
+                            @else
+                                <span class="text-xs font-semibold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100">Unpaid</span>
+                            @endif
                         </td>
-                        <td class="px-5 py-3.5 text-right text-slate-600">{{ number_format($cashAmount) }} Ks</td>
+                        <td class="px-5 py-3.5 text-right">
+                            @if($sale->credit_remaining > 0)
+                                <span class="font-bold text-red-600">{{ number_format($sale->credit_remaining) }} Ks</span>
+                            @else
+                                <span class="font-bold text-slate-400">0 Ks</span>
+                            @endif
+                        </td>
                         <td class="px-5 py-3.5 text-center">
                             @if($sale->customer)
                             <a href="{{ route('credits.history', $sale->customer) }}"

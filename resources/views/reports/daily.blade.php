@@ -42,7 +42,11 @@
             <tbody class="divide-y divide-slate-100">
                 @foreach($dailyStats as $stat)
                 <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="px-6 py-4 font-medium text-slate-800">{{ \Carbon\Carbon::parse($stat->date)->format('d M Y') }}</td>
+                    <td class="px-6 py-4 font-medium text-slate-800">
+                        <a href="{{ route('reports.items', ['start_date' => $stat->date, 'end_date' => $stat->date]) }}" class="text-blue-600 hover:text-blue-800 hover:underline" title="View details for this day">
+                            {{ \Carbon\Carbon::parse($stat->date)->format('d M Y') }}
+                        </a>
+                    </td>
                     <td class="px-6 py-4 text-center">{{ $stat->transaction_count }}</td>
                     <td class="px-6 py-4 text-right font-medium text-slate-800">{{ number_format($stat->revenue) }} K</td>
                     <td class="px-6 py-4 text-right text-slate-500">{{ number_format($stat->total_cost) }} K</td>

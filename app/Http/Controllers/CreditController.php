@@ -59,7 +59,8 @@ class CreditController extends Controller
             ->get();
 
         // All credit payments from this customer
-        $creditPayments = CreditPayment::where('customer_id', $customer->id)
+        $creditPayments = CreditPayment::with(['allocations.sale'])
+            ->where('customer_id', $customer->id)
             ->orderBy('created_at')
             ->get();
 
@@ -87,7 +88,7 @@ class CreditController extends Controller
 
         $timeline = $timeline->sortBy('date')->values();
 
-        return view('credits.history', compact('customer', 'timeline'));
+        return view('credits.history', compact('customer', 'timeline', 'creditSales'));
     }
 
     /**
@@ -99,6 +100,7 @@ class CreditController extends Controller
             'customer_id' => 'required|exists:customers,id',
             'amount'      => 'required|integer|min:1',
             'note'        => 'nullable|string|max:500',
+            'sale_id'     => 'nullable|exists:sales,id',
         ]);
 
         $customer = Customer::findOrFail($validated['customer_id']);
@@ -109,9 +111,49 @@ class CreditController extends Controller
 
         DB::beginTransaction();
         try {
-            CreditPayment::create($validated);
+            $payment = CreditPayment::create($validated);
 
             $customer->decrement('credit_balance', $validated['amount']);
+
+            // FIFO or Specific Allocation Logic
+            $remainingPayment = $validated['amount'];
+            
+            // Get sales to allocate to
+            $query = Sale::where('customer_id', $customer->id)
+                ->where('credit_remaining', '>', 0)
+                ->lockForUpdate();
+
+            if (!empty($validated['sale_id'])) {
+                $query->where('id', $validated['sale_id']);
+            } else {
+                $query->orderBy('created_at', 'asc');
+            }
+
+            $unpaidSales = $query->get();
+
+            foreach ($unpaidSales as $sale) {
+                if ($remainingPayment <= 0) break;
+
+                $allocationAmount = min($sale->credit_remaining, $remainingPayment);
+
+                // Create the allocation record linking this payment to this sale
+                \App\Models\CreditAllocation::create([
+                    'credit_payment_id' => $payment->id,
+                    'sale_id'           => $sale->id,
+                    'amount'            => $allocationAmount,
+                ]);
+
+                // Update the sale
+                $sale->credit_remaining -= $allocationAmount;
+                
+                if ($sale->credit_remaining == 0) {
+                    $sale->payment_status = 'paid';
+                }
+
+                $sale->save();
+
+                $remainingPayment -= $allocationAmount;
+            }
 
             DB::commit();
         } catch (\Exception $e) {

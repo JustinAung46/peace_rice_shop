@@ -12,4 +12,9 @@ class CreditPayment extends Model
     {
         return $this->belongsTo(Customer::class);
     }
+
+    public function allocations()
+    {
+        return $this->hasMany(CreditAllocation::class);
+    }
 }

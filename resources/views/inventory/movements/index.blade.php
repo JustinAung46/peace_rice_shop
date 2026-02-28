@@ -72,6 +72,11 @@
                                 <br>
                                 <span class="text-slate-500 ml-2">Wh: {{ $movement->fromWarehouse ? $movement->fromWarehouse->name : 'N/A' }}</span>
                             </div>
+                        @elseif($movement->type === 'in')
+                            <div class="flex items-center text-xs">
+                                <span class="text-slate-500">To:</span>
+                                <span class="ml-1 font-medium text-slate-800">{{ $movement->toWarehouse ? $movement->toWarehouse->name : 'N/A' }}</span>
+                            </div>
                         @endif
                     </td>
                     <td class="px-6 py-4 text-slate-600">

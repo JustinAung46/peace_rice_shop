@@ -70,7 +70,11 @@
                         <ul class="list-disc list-inside text-xs">
                         @foreach($sale->items as $item)
                             <li class="mb-1">
-                                <span class="font-semibold">{{ $item->product->name }}</span> x {{ $item->quantity }}
+                                <span class="font-semibold">{{ $item->product->name }}</span>
+                                @if($item->variant)
+                                    <span class="text-xs text-slate-500 font-normal">({{ $item->variant->name }})</span>
+                                @endif
+                                x {{ $item->quantity }}
                                 <br>
                                 <span class="text-slate-400 ml-4">Price: {{ number_format($item->unit_price) }} | Dist: {{ number_format($item->discount) }}</span>
                             </li>

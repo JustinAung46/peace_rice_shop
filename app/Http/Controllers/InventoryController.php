@@ -153,12 +153,30 @@ class InventoryController extends Controller
 
     // ─── Stock In ────────────────────────────────────────────────────────────
 
-    public function stock()
+    public function stock(Request $request)
     {
         $products   = Product::with('variants')->get();
         $warehouses = \App\Models\Warehouse::all();
         $categories = \App\Models\Category::all();
-        return view('inventory.stock', compact('products', 'warehouses', 'categories'));
+        $prefProductId = $request->query('product_id');
+        $prefVariantId = $request->query('product_variant_id');
+        $prefWarehouseId = $request->query('warehouse_id');
+        $productsJson = $products->map(function ($p) {
+            return [
+                'id' => $p->id,
+                'name' => $p->name,
+                'category_id' => $p->category_id,
+                'variants' => $p->variants->map(function ($v) {
+                    return [
+                        'id' => $v->id,
+                        'name' => $v->name,
+                        'selling_price' => $v->selling_price,
+                        'unit_label' => $v->unit_label
+                    ];
+                })->values()->toArray()
+            ];
+        })->values()->toArray();
+        return view('inventory.stock', compact('products', 'warehouses', 'categories', 'prefProductId', 'prefVariantId', 'prefWarehouseId', 'productsJson'));
     }
 
     public function storeStock(Request $request)
