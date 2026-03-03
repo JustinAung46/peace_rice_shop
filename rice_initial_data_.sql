@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 9.0.1, for macos14.7 (arm64)
 --
--- Host: localhost    Database: peace_rice_shop
+-- Host: localhost    Database: peace_test
 -- ------------------------------------------------------
 -- Server version	9.0.1
 
@@ -53,7 +53,7 @@ CREATE TABLE `categories` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -62,8 +62,39 @@ CREATE TABLE `categories` (
 
 LOCK TABLES `categories` WRITE;
 /*!40000 ALTER TABLE `categories` DISABLE KEYS */;
-INSERT INTO `categories` VALUES (1,'Paw San',NULL,'2026-02-22 07:56:24','2026-02-22 07:56:24'),(2,'Oil',NULL,'2026-02-25 15:17:26','2026-02-25 15:17:26');
+INSERT INTO `categories` VALUES (1,'Paw San',NULL,'2026-02-28 16:01:32','2026-02-28 16:01:32'),(2,'Ayar Min',NULL,'2026-02-28 16:03:22','2026-02-28 16:03:22'),(3,'Shan',NULL,'2026-02-28 16:03:31','2026-02-28 16:03:31'),(4,'Common',NULL,'2026-02-28 16:03:40','2026-02-28 16:03:40'),(5,'Kitchen',NULL,'2026-03-01 04:44:18','2026-03-01 04:44:18'),(6,'Oil',NULL,'2026-03-01 04:48:13','2026-03-01 04:48:13');
 /*!40000 ALTER TABLE `categories` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `credit_allocations`
+--
+
+DROP TABLE IF EXISTS `credit_allocations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `credit_allocations` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `credit_payment_id` bigint unsigned NOT NULL,
+  `sale_id` bigint unsigned NOT NULL,
+  `amount` bigint NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `credit_allocations_credit_payment_id_foreign` (`credit_payment_id`),
+  KEY `credit_allocations_sale_id_foreign` (`sale_id`),
+  CONSTRAINT `credit_allocations_credit_payment_id_foreign` FOREIGN KEY (`credit_payment_id`) REFERENCES `credit_payments` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `credit_allocations_sale_id_foreign` FOREIGN KEY (`sale_id`) REFERENCES `sales` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `credit_allocations`
+--
+
+LOCK TABLES `credit_allocations` WRITE;
+/*!40000 ALTER TABLE `credit_allocations` DISABLE KEYS */;
+/*!40000 ALTER TABLE `credit_allocations` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -83,7 +114,7 @@ CREATE TABLE `credit_payments` (
   PRIMARY KEY (`id`),
   KEY `credit_payments_customer_id_foreign` (`customer_id`),
   CONSTRAINT `credit_payments_customer_id_foreign` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -92,7 +123,6 @@ CREATE TABLE `credit_payments` (
 
 LOCK TABLES `credit_payments` WRITE;
 /*!40000 ALTER TABLE `credit_payments` DISABLE KEYS */;
-INSERT INTO `credit_payments` VALUES (1,2,10000,'Cash','2026-02-26 11:19:04','2026-02-26 11:19:04');
 /*!40000 ALTER TABLE `credit_payments` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -112,7 +142,7 @@ CREATE TABLE `customers` (
   `updated_at` timestamp NULL DEFAULT NULL,
   `address` text COLLATE utf8mb4_unicode_ci,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -121,7 +151,7 @@ CREATE TABLE `customers` (
 
 LOCK TABLES `customers` WRITE;
 /*!40000 ALTER TABLE `customers` DISABLE KEYS */;
-INSERT INTO `customers` VALUES (1,'Walk-in Customer',NULL,0,'2026-02-22 07:54:27','2026-02-22 07:54:27',NULL),(2,'Jojn','09784127041',10000,'2026-02-22 08:08:40','2026-02-26 11:19:04','Butar lan');
+INSERT INTO `customers` VALUES (1,'Walk-in Customer',NULL,0,'2026-02-28 15:57:21','2026-02-28 15:57:21',NULL);
 /*!40000 ALTER TABLE `customers` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -166,7 +196,7 @@ CREATE TABLE `migrations` (
   `migration` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `batch` int NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=28 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -175,7 +205,7 @@ CREATE TABLE `migrations` (
 
 LOCK TABLES `migrations` WRITE;
 /*!40000 ALTER TABLE `migrations` DISABLE KEYS */;
-INSERT INTO `migrations` VALUES (1,'0001_01_01_000000_baseline_migration',1),(2,'2026_02_24_140545_change_decimals_to_integers_in_inventory_and_pos',2),(3,'2026_02_24_143544_drop_redundant_columns_from_products_table',3),(4,'2026_02_25_000001_create_product_variants_table',4),(5,'2026_02_26_165333_add_is_active_to_products_and_variants',5),(6,'2026_02_26_173745_create_credit_payments_table',6);
+INSERT INTO `migrations` VALUES (1,'2026_02_28_222227_create_cache_table',1),(2,'2026_02_28_222227_create_categories_table',1),(3,'2026_02_28_222227_create_credit_allocations_table',1),(4,'2026_02_28_222227_create_credit_payments_table',1),(5,'2026_02_28_222227_create_customers_table',1),(6,'2026_02_28_222227_create_jobs_table',1),(7,'2026_02_28_222227_create_product_variants_table',1),(8,'2026_02_28_222227_create_products_table',1),(9,'2026_02_28_222227_create_sale_item_batches_table',1),(10,'2026_02_28_222227_create_sale_items_table',1),(11,'2026_02_28_222227_create_sale_payments_table',1),(12,'2026_02_28_222227_create_sales_table',1),(13,'2026_02_28_222227_create_sessions_table',1),(14,'2026_02_28_222227_create_stock_batches_table',1),(15,'2026_02_28_222227_create_stock_movements_table',1),(16,'2026_02_28_222227_create_users_table',1),(17,'2026_02_28_222227_create_warehouses_table',1),(18,'2026_02_28_222230_add_foreign_keys_to_credit_allocations_table',1),(19,'2026_02_28_222230_add_foreign_keys_to_credit_payments_table',1),(20,'2026_02_28_222230_add_foreign_keys_to_product_variants_table',1),(21,'2026_02_28_222230_add_foreign_keys_to_products_table',1),(22,'2026_02_28_222230_add_foreign_keys_to_sale_item_batches_table',1),(23,'2026_02_28_222230_add_foreign_keys_to_sale_items_table',1),(24,'2026_02_28_222230_add_foreign_keys_to_sale_payments_table',1),(25,'2026_02_28_222230_add_foreign_keys_to_sales_table',1),(26,'2026_02_28_222230_add_foreign_keys_to_stock_batches_table',1),(27,'2026_02_28_222230_add_foreign_keys_to_stock_movements_table',1);
 /*!40000 ALTER TABLE `migrations` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -202,7 +232,7 @@ CREATE TABLE `product_variants` (
   UNIQUE KEY `product_variants_sku_unique` (`sku`),
   KEY `product_variants_product_id_foreign` (`product_id`),
   CONSTRAINT `product_variants_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=103 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -211,7 +241,7 @@ CREATE TABLE `product_variants` (
 
 LOCK TABLES `product_variants` WRITE;
 /*!40000 ALTER TABLE `product_variants` DISABLE KEYS */;
-INSERT INTO `product_variants` VALUES (1,3,'1 Viss',NULL,'Bottle',12000,NULL,NULL,1,'2026-02-25 15:21:38','2026-02-25 15:21:38'),(2,3,'3 Viss',NULL,'Bottle',35000,NULL,NULL,1,'2026-02-25 15:21:38','2026-02-25 15:21:38'),(3,1,'New 6 Pyi',NULL,'Bag',60000,6,NULL,1,'2026-02-25 15:32:57','2026-02-26 10:48:50'),(4,1,'Old 6 Pyi',NULL,'Bag',70000,6,NULL,1,'2026-02-25 15:33:38','2026-02-26 10:48:50'),(5,2,'Old 24 Pyi',NULL,'Bag',275000,24,NULL,1,'2026-02-25 15:35:26','2026-02-26 10:50:18'),(6,2,'New 24 Pyi',NULL,'Bag',200000,24,NULL,1,'2026-02-25 15:38:18','2026-02-26 10:50:18'),(7,4,'New 24 Pyi',NULL,'Bag',250000,24,12000,1,'2026-02-25 15:59:22','2026-02-25 15:59:22'),(8,1,'New 12 Pyi',NULL,'Bag',120000,12,NULL,1,'2026-02-26 08:39:59','2026-02-26 10:48:50'),(9,1,'New 24 Pyi',NULL,'Bag',240000,24,12000,1,'2026-02-26 09:36:24','2026-02-26 10:48:50'),(10,1,'efere',NULL,'ere',34343,NULL,NULL,0,'2026-02-26 09:36:42','2026-02-26 10:48:50'),(11,1,'334ere',NULL,'rere',33434,NULL,NULL,0,'2026-02-26 09:36:42','2026-02-26 10:48:50'),(12,1,'ererere',NULL,'3r3',3434,NULL,NULL,0,'2026-02-26 09:36:42','2026-02-26 10:48:50');
+INSERT INTO `product_variants` VALUES (1,1,'New 24 Pyi',NULL,'Bag',245000,24,NULL,1,'2026-02-28 16:06:15','2026-03-01 05:40:15'),(2,1,'New 12 Pyi',NULL,'Bag',125000,12,NULL,1,'2026-02-28 16:07:10','2026-03-01 05:40:15'),(3,1,'New 6 Pyi',NULL,'Bag',63000,6,NULL,1,'2026-02-28 16:07:10','2026-03-01 05:40:15'),(4,1,'New 3 Pyi',NULL,'Bag',33000,3,NULL,1,'2026-02-28 16:07:10','2026-03-01 05:40:15'),(5,1,'New 1 Pyi',NULL,'Bag',11000,1,NULL,1,'2026-02-28 16:07:10','2026-03-01 05:40:15'),(6,2,'New 24 Pyi',NULL,'Bag',245000,24,NULL,1,'2026-02-28 16:08:32','2026-03-01 05:46:43'),(7,2,'New 12 Pyi',NULL,'Bag',125000,12,NULL,1,'2026-02-28 16:08:32','2026-03-01 05:46:43'),(8,2,'New 6 Pyi',NULL,'Bag',63000,6,NULL,1,'2026-02-28 16:08:32','2026-03-01 05:46:43'),(9,3,'New 24 Pyi',NULL,'Bag',225000,24,9500,1,'2026-02-28 16:09:48','2026-03-01 05:47:09'),(10,4,'New 24 Pyi',NULL,'Bag',235000,24,10000,1,'2026-02-28 16:10:45','2026-03-01 05:48:09'),(11,5,'New 24 Pyi',NULL,'Bag',0,24,12000,1,'2026-02-28 16:11:59','2026-03-01 05:49:55'),(12,6,'New 24 Pyi',NULL,'Bag',145000,24,6500,1,'2026-02-28 16:12:56','2026-03-02 13:57:19'),(13,7,'New 24 Pyi',NULL,'Bag',245000,24,NULL,1,'2026-02-28 16:14:40','2026-03-01 05:53:03'),(14,7,'New 12 Pyi',NULL,'Bag',125000,12,NULL,1,'2026-02-28 16:14:40','2026-03-01 05:53:03'),(15,7,'New 6 Pyi',NULL,'Bag',63000,6,NULL,1,'2026-02-28 16:14:40','2026-03-01 05:53:03'),(16,8,'New 6 Pyi',NULL,'Bag',58000,6,NULL,1,'2026-02-28 16:15:30','2026-03-01 06:03:39'),(17,9,'New 24 Pyi',NULL,'Bag',180000,24,8000,1,'2026-02-28 16:16:04','2026-03-02 13:53:05'),(18,10,'New 24 Pyi',NULL,'Bag',220000,24,9500,1,'2026-02-28 16:16:59','2026-03-02 13:55:08'),(19,11,'24 Pyi',NULL,'Bag',155000,24,7000,1,'2026-02-28 16:17:34','2026-03-02 13:55:40'),(20,12,'24 Pyi',NULL,'Bag',220000,24,NULL,1,'2026-02-28 16:18:30','2026-03-02 13:56:49'),(21,12,'12 Pyi',NULL,'Bag',110000,12,NULL,1,'2026-02-28 16:18:30','2026-03-02 13:56:49'),(22,12,'6 Pyi',NULL,'Bag',57000,6,NULL,1,'2026-02-28 16:18:30','2026-03-02 13:56:49'),(23,13,'24 Pyi',NULL,'Bag',0,24,NULL,1,'2026-02-28 16:19:02','2026-03-02 13:57:43'),(24,14,'24 Pyi',NULL,'Bag',200000,24,NULL,1,'2026-02-28 16:19:50','2026-03-02 13:58:30'),(26,14,'6 Pyi',NULL,'Bag',54000,6,NULL,1,'2026-02-28 16:19:50','2026-03-02 13:58:30'),(27,15,'24 Pyi',NULL,'Bag',0,24,9000,1,'2026-02-28 16:20:34','2026-03-02 13:59:01'),(28,16,'24 Pyi',NULL,'Bag',135000,24,5500,1,'2026-02-28 16:20:52','2026-03-02 14:00:08'),(29,17,'24 Pyi',NULL,'Bag',220000,24,9500,1,'2026-02-28 16:21:22','2026-03-02 14:00:57'),(30,18,'24 Pyi',NULL,'Bag',170000,24,7500,1,'2026-02-28 16:22:10','2026-03-02 14:01:12'),(31,19,'20 Pyi',NULL,'Bag',120000,20,6500,1,'2026-02-28 16:22:35','2026-03-02 14:03:11'),(32,20,'20 Pyi',NULL,'Bag',125000,NULL,NULL,1,'2026-02-28 16:22:50','2026-03-02 14:03:01'),(33,21,'20 Pyi',NULL,'Bag',120000,20,6500,1,'2026-02-28 16:23:09','2026-03-02 14:03:27'),(34,22,'20 Pyi',NULL,'Bag',125000,NULL,NULL,1,'2026-02-28 16:23:27','2026-03-02 14:03:37'),(35,23,'20 Pyi',NULL,'Bag',155000,20,8000,1,'2026-02-28 16:23:40','2026-03-02 14:05:00'),(36,24,'22 Pyi',NULL,'Bag',125000,22,6500,1,'2026-02-28 16:23:58','2026-03-02 14:04:45'),(37,25,'20 Pyi',NULL,'Bag',120000,20,6500,1,'2026-02-28 16:24:11','2026-03-02 14:05:22'),(38,26,'22 Pyi',NULL,'Bag',165000,22,7500,1,'2026-02-28 16:24:24','2026-03-02 14:05:56'),(39,27,'22 Pyi',NULL,'Bag',145000,22,6500,1,'2026-02-28 16:24:41','2026-03-02 14:06:21'),(40,28,'22 Pyi',NULL,'Bag',110000,22,5500,1,'2026-02-28 16:24:57','2026-03-02 14:07:03'),(41,29,'22 Pyi',NULL,'Bag',165000,22,7500,1,'2026-02-28 16:25:13','2026-03-02 14:07:20'),(42,30,'23 Pyi',NULL,'Bag',125000,23,6000,1,'2026-02-28 16:25:27','2026-03-02 14:08:26'),(43,31,'24 Pyi',NULL,'Bag',0,NULL,NULL,1,'2026-02-28 16:25:40','2026-03-02 14:08:35'),(44,32,'24 Pyi',NULL,'Bag',120000,23,5500,1,'2026-02-28 16:25:59','2026-03-02 14:09:01'),(45,33,'24 Pyi',NULL,'Bag',120000,24,5500,1,'2026-02-28 16:26:12','2026-03-02 14:09:19'),(47,35,'24 Pyi',NULL,'Bag',80000,24,3500,1,'2026-02-28 16:26:45','2026-03-02 14:11:06'),(48,36,'24 Pyi',NULL,'Bag',85000,23,4000,1,'2026-02-28 16:27:03','2026-03-02 14:11:27'),(49,34,'Old 24 Pyi',NULL,'Bag',85000,24,4000,1,'2026-02-28 16:30:39','2026-03-02 14:10:40'),(50,37,'10 Pyi',NULL,'Bag',60000,10,6500,1,'2026-02-28 16:31:33','2026-03-02 14:12:38'),(51,38,'အကြီး',NULL,'Bottle',5500,NULL,NULL,1,'2026-03-01 04:45:57','2026-03-01 04:45:57'),(52,39,'အကြီး',NULL,'Bottle',5000,NULL,NULL,1,'2026-03-01 04:47:28','2026-03-01 04:47:28'),(53,40,'0.25',NULL,'Viss',4000,NULL,NULL,1,'2026-03-01 04:49:48','2026-03-01 04:49:48'),(54,40,'0.5',NULL,'Viss',5500,NULL,NULL,1,'2026-03-01 04:49:48','2026-03-01 04:49:48'),(55,40,'1',NULL,'Viss',12000,NULL,NULL,1,'2026-03-01 04:49:48','2026-03-01 04:49:48'),(56,40,'3',NULL,'Viss',33000,NULL,NULL,1,'2026-03-01 04:49:48','2026-03-01 04:49:48'),(57,40,'5',NULL,'Viss',55000,NULL,NULL,1,'2026-03-01 04:49:48','2026-03-01 04:49:48'),(58,40,'10',NULL,'Viss',115000,NULL,NULL,1,'2026-03-01 04:49:48','2026-03-01 04:49:48'),(59,41,'0.25',NULL,'Viss',3500,NULL,NULL,1,'2026-03-01 04:50:58','2026-03-01 04:50:58'),(60,41,'0.5',NULL,'Viss',5000,NULL,NULL,1,'2026-03-01 04:50:58','2026-03-01 04:50:58'),(61,41,'1',NULL,'Viss',11500,NULL,NULL,1,'2026-03-01 04:50:58','2026-03-01 04:50:58'),(62,41,'3',NULL,'Viss',33000,NULL,NULL,1,'2026-03-01 04:50:58','2026-03-01 04:50:58'),(63,41,'5',NULL,'Viss',55000,NULL,NULL,1,'2026-03-01 04:50:58','2026-03-01 04:50:58'),(64,41,'10',NULL,'Viss',115000,NULL,NULL,1,'2026-03-01 04:50:58','2026-03-01 04:50:58'),(65,42,'1',NULL,'Viss',11500,NULL,NULL,1,'2026-03-01 04:52:12','2026-03-01 04:52:12'),(66,42,'3',NULL,'Viss',33000,NULL,NULL,1,'2026-03-01 04:52:12','2026-03-01 04:52:12'),(67,42,'5',NULL,'Viss',55000,NULL,NULL,1,'2026-03-01 04:52:12','2026-03-01 04:52:12'),(68,42,'10',NULL,'Viss',115000,NULL,NULL,1,'2026-03-01 04:52:12','2026-03-01 04:52:12'),(69,43,'0.5',NULL,'Viss',11500,NULL,NULL,1,'2026-03-01 04:54:20','2026-03-01 04:54:20'),(70,43,'1',NULL,'Viss',23000,NULL,NULL,1,'2026-03-01 04:54:20','2026-03-01 04:54:20'),(71,43,'2',NULL,'Viss',46000,NULL,NULL,1,'2026-03-01 04:54:20','2026-03-01 04:54:20'),(72,43,'3',NULL,'Viss',39000,NULL,NULL,1,'2026-03-01 04:54:20','2026-03-01 04:54:20'),(73,43,'5',NULL,'Viss',115000,NULL,NULL,1,'2026-03-01 04:54:20','2026-03-01 04:54:20'),(74,43,'10',NULL,'Viss',225000,NULL,NULL,1,'2026-03-01 04:54:20','2026-03-01 04:54:20'),(75,44,'0.25',NULL,'Viss',6000,NULL,NULL,1,'2026-03-01 04:56:39','2026-03-01 04:56:39'),(76,44,'0.5',NULL,'Viss',12000,NULL,NULL,1,'2026-03-01 04:56:39','2026-03-01 04:56:39'),(77,44,'1',NULL,'Viss',23500,NULL,NULL,1,'2026-03-01 04:56:39','2026-03-01 04:56:39'),(78,44,'2',NULL,'Viss',47000,NULL,NULL,1,'2026-03-01 04:56:39','2026-03-01 04:56:39'),(79,44,'3',NULL,'Viss',70500,NULL,NULL,1,'2026-03-01 04:56:39','2026-03-01 04:56:39'),(80,44,'5',NULL,'Viss',117500,NULL,NULL,1,'2026-03-01 04:56:39','2026-03-01 04:56:39'),(81,45,'0.5',NULL,'Viss',11000,NULL,NULL,1,'2026-03-01 04:58:20','2026-03-01 04:59:59'),(82,45,'1',NULL,'Viss',22000,NULL,NULL,1,'2026-03-01 04:58:20','2026-03-01 04:59:59'),(83,45,'2',NULL,'Viss',44000,NULL,NULL,1,'2026-03-01 04:58:20','2026-03-01 04:59:59'),(84,45,'3',NULL,'Viss',66000,NULL,NULL,1,'2026-03-01 04:58:20','2026-03-01 04:59:59'),(85,45,'5',NULL,'Viss',110000,NULL,NULL,1,'2026-03-01 04:58:20','2026-03-01 04:59:59'),(86,46,'0.5',NULL,'Viss',11500,NULL,NULL,1,'2026-03-01 05:02:18','2026-03-01 05:02:18'),(87,46,'1',NULL,'Viss',23000,NULL,NULL,1,'2026-03-01 05:02:18','2026-03-01 05:02:18'),(88,46,'2',NULL,'Viss',46000,NULL,NULL,1,'2026-03-01 05:02:18','2026-03-01 05:02:18'),(89,46,'3',NULL,'Viss',69000,NULL,NULL,1,'2026-03-01 05:02:18','2026-03-01 05:02:18'),(90,46,'5',NULL,'Viss',115000,NULL,NULL,1,'2026-03-01 05:02:18','2026-03-01 05:02:18'),(91,47,'0.5',NULL,'Viss',8500,NULL,NULL,1,'2026-03-01 05:02:57','2026-03-01 05:02:57'),(92,47,'1',NULL,'Viss',16000,NULL,NULL,1,'2026-03-01 05:02:57','2026-03-01 05:02:57'),(93,48,'0.5',NULL,'Viss',6000,NULL,NULL,1,'2026-03-01 05:03:47','2026-03-01 05:03:47'),(94,48,'1',NULL,'Viss',14000,NULL,NULL,1,'2026-03-01 05:03:47','2026-03-01 05:03:47'),(95,49,'0.5',NULL,'Viss',7000,NULL,NULL,1,'2026-03-01 05:05:05','2026-03-01 05:05:05'),(96,49,'1',NULL,'Viss',14000,NULL,NULL,1,'2026-03-01 05:05:05','2026-03-01 05:05:05'),(97,49,'3',NULL,'Viss',34500,NULL,NULL,1,'2026-03-01 05:05:05','2026-03-01 05:05:05'),(98,49,'10',NULL,'Viss',120000,NULL,NULL,1,'2026-03-01 05:05:05','2026-03-01 05:05:05'),(99,50,'3',NULL,'Viss',29000,NULL,NULL,1,'2026-03-01 05:05:49','2026-03-01 05:05:49'),(100,51,'3',NULL,'Viss',29000,NULL,NULL,1,'2026-03-01 05:06:16','2026-03-01 05:06:16'),(101,52,'3',NULL,'Viss',29500,NULL,NULL,1,'2026-03-01 05:06:43','2026-03-01 05:06:43'),(102,53,'3',NULL,'Viss',29000,NULL,NULL,1,'2026-03-01 05:07:39','2026-03-01 05:07:39');
 /*!40000 ALTER TABLE `product_variants` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -234,7 +264,7 @@ CREATE TABLE `products` (
   PRIMARY KEY (`id`),
   KEY `products_category_id_foreign` (`category_id`),
   CONSTRAINT `products_category_id_foreign` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -243,7 +273,7 @@ CREATE TABLE `products` (
 
 LOCK TABLES `products` WRITE;
 /*!40000 ALTER TABLE `products` DISABLE KEYS */;
-INSERT INTO `products` VALUES (1,'NC Paw San',1,1,NULL,'products/5AW15gRhBWSWDuBiaNa8mM8jEtAmewqPjJmeEQro.jpg','2026-02-22 07:56:57','2026-02-26 10:48:50'),(2,'Raw Paw San',1,0,NULL,NULL,'2026-02-22 07:57:45','2026-02-26 10:50:18'),(3,'Shwe Mandalay',2,1,NULL,NULL,'2026-02-25 15:21:38','2026-02-25 15:21:38'),(4,'ATH Paw San',1,1,NULL,NULL,'2026-02-25 15:59:22','2026-02-25 15:59:22');
+INSERT INTO `products` VALUES (1,'Aung Thi Ha',1,1,NULL,'products/YowSjOCCaK46kcVK5yH0Es1EDsDTz0WlvE1APyn7.jpg','2026-02-28 16:06:15','2026-03-01 05:40:15'),(2,'5 Diamond',1,1,NULL,NULL,'2026-02-28 16:08:32','2026-03-01 05:46:43'),(3,'Aung Thi Ha အရော',1,1,NULL,NULL,'2026-02-28 16:09:48','2026-03-01 05:47:09'),(4,'SMK Paw San',1,1,'ဖောက်ရောင်း',NULL,'2026-02-28 16:10:45','2026-03-01 05:48:09'),(5,'Raw Paw San',1,1,NULL,NULL,'2026-02-28 16:11:59','2026-03-01 05:49:55'),(6,'TG ဇလတ်',1,1,NULL,NULL,'2026-02-28 16:12:56','2026-03-02 13:57:19'),(7,'Nyein Chan Paw San',1,1,NULL,NULL,'2026-02-28 16:14:40','2026-03-01 05:53:03'),(8,'Golden Bee',1,1,NULL,NULL,'2026-02-28 16:15:30','2026-03-01 06:03:39'),(9,'Pon Paw San',1,1,NULL,NULL,'2026-02-28 16:16:04','2026-03-02 13:53:05'),(10,'5 Diamond Ayar Min',2,1,NULL,NULL,'2026-02-28 16:16:59','2026-03-02 13:55:08'),(11,'Pon AyarMin',2,1,NULL,NULL,'2026-02-28 16:17:34','2026-03-02 13:55:40'),(12,'Nyein Chan Ayar Min',2,1,NULL,NULL,'2026-02-28 16:18:30','2026-03-02 13:56:49'),(13,'Raw Ayar Min',2,0,NULL,NULL,'2026-02-28 16:19:02','2026-03-02 13:57:43'),(14,'Nyein Chan မဂျမ်းတော',2,1,NULL,NULL,'2026-02-28 16:19:50','2026-03-02 13:58:30'),(15,'Raw မဂျမ်းတော',2,1,NULL,NULL,'2026-02-28 16:20:34','2026-03-02 13:59:01'),(16,'SMK မဂျမ်းရိုးရိုး',2,1,NULL,NULL,'2026-02-28 16:20:52','2026-03-02 14:00:08'),(17,'KKS ဝန်ကြီးဧရာ',2,1,NULL,NULL,'2026-02-28 16:21:22','2026-03-02 14:00:57'),(18,'KKS လုံးသွယ်မွှေး',2,1,NULL,NULL,'2026-02-28 16:22:10','2026-03-02 14:01:12'),(19,'881',3,1,NULL,NULL,'2026-02-28 16:22:35','2026-03-02 14:03:11'),(20,'881 (Arr Yon)',3,1,NULL,NULL,'2026-02-28 16:22:50','2026-03-02 14:03:01'),(21,'502',3,1,NULL,NULL,'2026-02-28 16:23:09','2026-03-02 14:03:27'),(22,'502 (Arr Yon)',3,1,NULL,NULL,'2026-02-28 16:23:27','2026-03-02 14:03:37'),(23,'456 Arr Yon',3,1,NULL,NULL,'2026-02-28 16:23:40','2026-03-02 14:05:00'),(24,'Kaw Lin',3,1,NULL,NULL,'2026-02-28 16:23:58','2026-03-02 14:04:45'),(25,'ရှမ်းနီ',3,1,NULL,NULL,'2026-02-28 16:24:11','2026-03-02 14:05:22'),(26,'ကောက်ညင်းရှယ်',3,1,NULL,NULL,'2026-02-28 16:24:24','2026-03-02 14:05:56'),(27,'ကောက်ညင်းနီ',3,1,NULL,NULL,'2026-02-28 16:24:41','2026-03-02 14:06:21'),(28,'ညင်းဇလတ်',3,1,NULL,NULL,'2026-02-28 16:24:57','2026-03-02 14:07:03'),(29,'ငချိတ်',3,1,NULL,NULL,'2026-02-28 16:25:13','2026-03-02 14:07:20'),(30,'Maw Bi',4,1,NULL,NULL,'2026-02-28 16:25:27','2026-03-02 14:08:26'),(31,'ပုလဲသွယ်',4,0,NULL,NULL,'2026-02-28 16:25:40','2026-03-02 14:08:35'),(32,'ရွှေသပြေ သုခ',4,1,NULL,NULL,'2026-02-28 16:25:59','2026-03-02 14:09:01'),(33,'ရက် ၉၀',4,1,NULL,NULL,'2026-02-28 16:26:12','2026-03-02 14:09:19'),(34,'နှံကောက်',4,1,NULL,NULL,'2026-02-28 16:26:30','2026-03-02 14:10:40'),(35,'ဆန်ကြမ်း',4,1,NULL,NULL,'2026-02-28 16:26:45','2026-03-02 14:11:06'),(36,'ဇကွဲ',4,1,NULL,NULL,'2026-02-28 16:27:03','2026-03-02 14:11:27'),(37,'စတော်ပဲ',4,1,NULL,NULL,'2026-02-28 16:31:33','2026-03-02 14:12:38'),(38,'မြင်းပျံ ကြာညို့',5,1,NULL,NULL,'2026-03-01 04:45:57','2026-03-01 04:45:57'),(39,'ထုံချွင် ကြာညို့',5,1,NULL,NULL,'2026-03-01 04:47:28','2026-03-01 04:47:28'),(40,'Shwe Mandalay',6,1,NULL,NULL,'2026-03-01 04:49:48','2026-03-01 04:49:48'),(41,'Shwe Taung',6,1,NULL,NULL,'2026-03-01 04:50:58','2026-03-01 04:50:58'),(42,'Zarmani',6,1,NULL,NULL,'2026-03-01 04:52:12','2026-03-01 04:52:12'),(43,'Shwe Ohh',6,1,NULL,NULL,'2026-03-01 04:54:20','2026-03-01 04:54:20'),(44,'A May Htwar',6,1,NULL,NULL,'2026-03-01 04:56:39','2026-03-01 04:56:39'),(45,'Pwint Phyu',6,1,NULL,NULL,'2026-03-01 04:58:20','2026-03-01 04:59:59'),(46,'Shwe Ohh',6,1,NULL,NULL,'2026-03-01 05:02:18','2026-03-01 05:02:18'),(47,'Good Choice',6,1,NULL,NULL,'2026-03-01 05:02:57','2026-03-01 05:02:57'),(48,'Duck',6,1,NULL,NULL,'2026-03-01 05:03:47','2026-03-01 05:03:47'),(49,'ပုဇွန်နှစ်ကောင်',6,1,NULL,NULL,'2026-03-01 05:05:05','2026-03-01 05:05:05'),(50,'အုန်းပင်',6,1,NULL,NULL,'2026-03-01 05:05:49','2026-03-01 05:05:49'),(51,'ဖူလီ',6,1,NULL,NULL,'2026-03-01 05:06:16','2026-03-01 05:06:16'),(52,'ပဲဝါ',6,1,NULL,NULL,'2026-03-01 05:06:43','2026-03-01 05:06:43'),(53,'စာတန်း (Fuzhiquan)',6,1,NULL,NULL,'2026-03-01 05:07:39','2026-03-01 05:07:39');
 /*!40000 ALTER TABLE `products` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -267,7 +297,7 @@ CREATE TABLE `sale_item_batches` (
   KEY `sale_item_batches_stock_batch_id_foreign` (`stock_batch_id`),
   CONSTRAINT `sale_item_batches_sale_item_id_foreign` FOREIGN KEY (`sale_item_id`) REFERENCES `sale_items` (`id`) ON DELETE CASCADE,
   CONSTRAINT `sale_item_batches_stock_batch_id_foreign` FOREIGN KEY (`stock_batch_id`) REFERENCES `stock_batches` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -276,7 +306,6 @@ CREATE TABLE `sale_item_batches` (
 
 LOCK TABLES `sale_item_batches` WRITE;
 /*!40000 ALTER TABLE `sale_item_batches` DISABLE KEYS */;
-INSERT INTO `sale_item_batches` VALUES (1,1,4,1,200000,'2026-02-22 08:14:10','2026-02-22 08:14:10'),(2,1,6,1,200000,'2026-02-22 08:14:10','2026-02-22 08:14:10'),(3,2,7,2,10000,'2026-02-25 15:23:02','2026-02-25 15:23:02'),(4,3,8,1,33000,'2026-02-25 15:23:02','2026-02-25 15:23:02'),(5,4,12,2,50000,'2026-02-25 15:44:09','2026-02-25 15:44:09'),(6,5,14,1,220000,'2026-02-26 10:43:11','2026-02-26 10:43:11'),(7,6,14,1,220000,'2026-02-26 10:43:52','2026-02-26 10:43:52'),(8,7,10,1,62500,'2026-02-26 11:13:49','2026-02-26 11:13:49'),(9,8,12,2,50000,'2026-02-26 12:10:11','2026-02-26 12:10:11');
 /*!40000 ALTER TABLE `sale_item_batches` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -304,12 +333,12 @@ CREATE TABLE `sale_items` (
   PRIMARY KEY (`id`),
   KEY `sale_items_sale_id_foreign` (`sale_id`),
   KEY `sale_items_product_id_foreign` (`product_id`),
-  KEY `sale_items_created_at_index` (`created_at`),
   KEY `sale_items_product_variant_id_foreign` (`product_variant_id`),
+  KEY `sale_items_created_at_index` (`created_at`),
   CONSTRAINT `sale_items_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
   CONSTRAINT `sale_items_product_variant_id_foreign` FOREIGN KEY (`product_variant_id`) REFERENCES `product_variants` (`id`) ON DELETE CASCADE,
   CONSTRAINT `sale_items_sale_id_foreign` FOREIGN KEY (`sale_id`) REFERENCES `sales` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -318,7 +347,6 @@ CREATE TABLE `sale_items` (
 
 LOCK TABLES `sale_items` WRITE;
 /*!40000 ALTER TABLE `sale_items` DISABLE KEYS */;
-INSERT INTO `sale_items` VALUES (1,1,1,NULL,2,275000,200000,0,550000,550000,400000,'2026-02-22 08:14:10','2026-02-22 08:14:10'),(2,2,3,1,2,12000,10000,0,24000,24000,20000,'2026-02-25 15:23:02','2026-02-25 15:23:02'),(3,2,3,2,1,35000,33000,0,35000,35000,33000,'2026-02-25 15:23:02','2026-02-25 15:23:02'),(4,3,1,3,2,60000,50000,0,120000,120000,100000,'2026-02-25 15:44:09','2026-02-25 15:44:09'),(5,4,1,9,1,288000,220000,0,288000,288000,220000,'2026-02-26 10:43:11','2026-02-26 10:43:11'),(6,5,1,9,1,240000,220000,0,240000,240000,220000,'2026-02-26 10:43:52','2026-02-26 10:43:52'),(7,6,1,4,1,70000,62500,0,70000,70000,62500,'2026-02-26 11:13:49','2026-02-26 11:13:49'),(8,7,1,3,2,60000,50000,1000,120000,119000,100000,'2026-02-26 12:10:11','2026-02-26 12:10:11');
 /*!40000 ALTER TABLE `sale_items` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -339,7 +367,7 @@ CREATE TABLE `sale_payments` (
   PRIMARY KEY (`id`),
   KEY `sale_payments_sale_id_foreign` (`sale_id`),
   CONSTRAINT `sale_payments_sale_id_foreign` FOREIGN KEY (`sale_id`) REFERENCES `sales` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -348,7 +376,6 @@ CREATE TABLE `sale_payments` (
 
 LOCK TABLES `sale_payments` WRITE;
 /*!40000 ALTER TABLE `sale_payments` DISABLE KEYS */;
-INSERT INTO `sale_payments` VALUES (1,1,'Cash',550000,'2026-02-22 08:14:10','2026-02-22 08:14:10'),(2,2,'Cash',59000,'2026-02-25 15:23:02','2026-02-25 15:23:02'),(3,3,'Cash',120000,'2026-02-25 15:44:09','2026-02-25 15:44:09'),(4,4,'Cash',288000,'2026-02-26 10:43:11','2026-02-26 10:43:11'),(5,5,'Cash',240000,'2026-02-26 10:43:52','2026-02-26 10:43:52'),(6,6,'Credit',20000,'2026-02-26 11:13:49','2026-02-26 11:13:49'),(7,6,'Cash',50000,'2026-02-26 11:13:49','2026-02-26 11:13:49'),(8,7,'Cash',10000,'2026-02-26 12:10:11','2026-02-26 12:10:11'),(9,7,'Kpay',109000,'2026-02-26 12:10:11','2026-02-26 12:10:11');
 /*!40000 ALTER TABLE `sale_payments` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -365,8 +392,9 @@ CREATE TABLE `sales` (
   `customer_id` bigint unsigned DEFAULT NULL,
   `total_amount` bigint DEFAULT NULL,
   `payment_method` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Cash',
+  `credit_remaining` bigint NOT NULL DEFAULT '0',
   `status` enum('completed','cancelled') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'completed',
-  `payment_status` enum('unpaid','partial','paid') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'paid',
+  `payment_status` enum('unpaid','partial','paid','outstanding','completed') COLLATE utf8mb4_unicode_ci DEFAULT 'paid',
   `sale_type` enum('retail','wholesale') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'retail',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -375,7 +403,7 @@ CREATE TABLE `sales` (
   KEY `sales_customer_id_foreign` (`customer_id`),
   KEY `sales_created_at_index` (`created_at`),
   CONSTRAINT `sales_customer_id_foreign` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -384,7 +412,6 @@ CREATE TABLE `sales` (
 
 LOCK TABLES `sales` WRITE;
 /*!40000 ALTER TABLE `sales` DISABLE KEYS */;
-INSERT INTO `sales` VALUES (1,'INV-20260222-1',NULL,550000,'Cash','completed','paid','retail','2026-02-22 08:14:10','2026-02-22 08:14:10'),(2,'INV-20260225-1',NULL,59000,'Cash','completed','paid','retail','2026-02-25 15:23:02','2026-02-25 15:23:02'),(3,'INV-20260225-2',NULL,120000,'Cash','completed','paid','retail','2026-02-25 15:44:09','2026-02-25 15:44:09'),(4,'INV-20260226-1',NULL,288000,'Cash','completed','paid','retail','2026-02-26 10:43:11','2026-02-26 10:43:11'),(5,'INV-20260226-2',NULL,240000,'Cash','completed','paid','retail','2026-02-26 10:43:52','2026-02-26 10:43:52'),(6,'INV-20260226-3',2,70000,'Multi','completed','paid','retail','2026-02-26 11:13:49','2026-02-26 11:13:49'),(7,'INV-20260226-4',NULL,119000,'Multi','completed','paid','retail','2026-02-26 12:10:11','2026-02-26 12:10:11');
 /*!40000 ALTER TABLE `sales` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -414,7 +441,7 @@ CREATE TABLE `sessions` (
 
 LOCK TABLES `sessions` WRITE;
 /*!40000 ALTER TABLE `sessions` DISABLE KEYS */;
-INSERT INTO `sessions` VALUES ('gfNY500px47V9n5oqXkloXJzSWAXvK5E1bHuM3UQ',1,'127.0.0.1','Mozilla/5.0 (iPad; CPU OS 14_7_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Mobile/15E148 Safari/604.1','YTo1OntzOjY6Il90b2tlbiI7czo0MDoiaXBEaTF5SWtCbllSOUo2TzV2VXB3QW9lak4zakNSeHlLQ3lWQml0YiI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czoyMToiaHR0cDovL2xvY2FsaG9zdDo4MDAwIjt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9wb3MiO3M6NToicm91dGUiO3M6OToicG9zLmluZGV4Ijt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTt9',1772104253),('GvlIezMOkqa1OrtxEAkOtW5qBVf24CvW1mLO8PUM',1,'127.0.0.1','Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Safari/605.1.15','YTo1OntzOjY6Il90b2tlbiI7czo0MDoiSnUyZWlmQzBTek5wY2ZQb2w0SEpvY1NHVXRXalByZm83Z3RCWEdpZSI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czoyMToiaHR0cDovL2xvY2FsaG9zdDo4MDAwIjt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9pbnZlbnRvcnkiO3M6NToicm91dGUiO3M6MTU6ImludmVudG9yeS5pbmRleCI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7fQ==',1772107909),('JVYz2EiB4KwxsLzwltl0l21GVsWhbHzn6mQV1RiJ',1,'192.168.1.50','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36','YTo1OntzOjY6Il90b2tlbiI7czo0MDoiNFRUd3ZCR01XQWVzWHNlam1YMXB2OUR0d3JCRVBMSDh5VUJYZEozUSI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czoyNDoiaHR0cDovLzE5Mi4xNjguMS4xMDo4MDAwIjt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzQ6Imh0dHA6Ly8xOTIuMTY4LjEuMTA6ODAwMC9pbnZlbnRvcnkiO3M6NToicm91dGUiO3M6MTU6ImludmVudG9yeS5pbmRleCI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7fQ==',1772107838);
+INSERT INTO `sessions` VALUES ('AItk3m1J1HrkWIxrPl1EI5cGz0hwCrVFOvFTWgyx',1,'127.0.0.1','Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Safari/605.1.15','YTo1OntzOjY6Il90b2tlbiI7czo0MDoiS2VtemhicmNuMjdMODJoZnhnWUptb3BsUnFpTVFWY2owaFpITXFKRyI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czozMToiaHR0cDovL2xvY2FsaG9zdDo4MDAwL2ludmVudG9yeSI7fXM6OToiX3ByZXZpb3VzIjthOjI6e3M6MzoidXJsIjtzOjMxOiJodHRwOi8vbG9jYWxob3N0OjgwMDAvaW52ZW50b3J5IjtzOjU6InJvdXRlIjtzOjE1OiJpbnZlbnRvcnkuaW5kZXgiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO30=',1772460866);
 /*!40000 ALTER TABLE `sessions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -439,12 +466,12 @@ CREATE TABLE `stock_batches` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `stock_batches_product_id_foreign` (`product_id`),
-  KEY `stock_batches_warehouse_id_foreign` (`warehouse_id`),
   KEY `stock_batches_product_variant_id_foreign` (`product_variant_id`),
+  KEY `stock_batches_warehouse_id_foreign` (`warehouse_id`),
   CONSTRAINT `stock_batches_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
   CONSTRAINT `stock_batches_product_variant_id_foreign` FOREIGN KEY (`product_variant_id`) REFERENCES `product_variants` (`id`) ON DELETE CASCADE,
   CONSTRAINT `stock_batches_warehouse_id_foreign` FOREIGN KEY (`warehouse_id`) REFERENCES `warehouses` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -453,7 +480,6 @@ CREATE TABLE `stock_batches` (
 
 LOCK TABLES `stock_batches` WRITE;
 /*!40000 ALTER TABLE `stock_batches` DISABLE KEYS */;
-INSERT INTO `stock_batches` VALUES (1,1,NULL,2,5,0,200000,'2026-02-22',NULL,'2026-02-22 08:01:31','2026-02-22 08:14:08'),(2,2,NULL,2,8,8,50000,'2026-02-22','TR-1771747314','2026-02-22 08:01:54','2026-02-22 08:01:54'),(3,1,NULL,1,1,0,200000,'2026-02-22',NULL,'2026-02-22 08:03:47','2026-02-22 08:05:14'),(4,1,NULL,1,1,0,200000,'2026-02-22',NULL,'2026-02-22 08:04:45','2026-02-22 08:14:10'),(5,2,NULL,1,4,4,50000,'2026-02-22','TR-1771747514','2026-02-22 08:05:14','2026-02-22 08:05:14'),(6,1,NULL,1,1,0,200000,'2026-02-22',NULL,'2026-02-22 08:14:08','2026-02-22 08:14:10'),(7,3,1,1,10,8,10000,'2026-02-25',NULL,'2026-02-25 15:22:04','2026-02-25 15:23:02'),(8,3,2,1,20,19,33000,'2026-02-25',NULL,'2026-02-25 15:22:33','2026-02-25 15:23:02'),(9,2,5,1,10,8,250000,'2026-02-25',NULL,'2026-02-25 15:36:48','2026-02-25 15:37:13'),(10,1,4,1,8,7,62500,'2026-02-25','TR-1772033833','2026-02-25 15:37:13','2026-02-26 11:13:49'),(11,2,6,1,5,3,200000,'2026-02-25',NULL,'2026-02-25 15:38:34','2026-02-25 15:39:06'),(12,1,3,1,8,4,50000,'2026-02-25','TR-1772033946','2026-02-25 15:39:06','2026-02-26 12:10:11'),(13,4,7,2,5,5,220000,'2026-02-25',NULL,'2026-02-25 15:59:42','2026-02-25 15:59:42'),(14,1,9,1,10,8,220000,'2026-02-26',NULL,'2026-02-26 10:39:35','2026-02-26 10:43:52');
 /*!40000 ALTER TABLE `stock_batches` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -480,12 +506,12 @@ CREATE TABLE `stock_movements` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `stock_movements_product_id_foreign` (`product_id`),
+  KEY `stock_movements_product_variant_id_foreign` (`product_variant_id`),
   KEY `stock_movements_from_warehouse_id_foreign` (`from_warehouse_id`),
   KEY `stock_movements_to_warehouse_id_foreign` (`to_warehouse_id`),
   KEY `stock_movements_target_product_id_foreign` (`target_product_id`),
-  KEY `stock_movements_user_id_foreign` (`user_id`),
-  KEY `stock_movements_product_variant_id_foreign` (`product_variant_id`),
   KEY `stock_movements_target_variant_id_foreign` (`target_variant_id`),
+  KEY `stock_movements_user_id_foreign` (`user_id`),
   CONSTRAINT `stock_movements_from_warehouse_id_foreign` FOREIGN KEY (`from_warehouse_id`) REFERENCES `warehouses` (`id`) ON DELETE SET NULL,
   CONSTRAINT `stock_movements_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
   CONSTRAINT `stock_movements_product_variant_id_foreign` FOREIGN KEY (`product_variant_id`) REFERENCES `product_variants` (`id`) ON DELETE SET NULL,
@@ -493,7 +519,7 @@ CREATE TABLE `stock_movements` (
   CONSTRAINT `stock_movements_target_variant_id_foreign` FOREIGN KEY (`target_variant_id`) REFERENCES `product_variants` (`id`) ON DELETE SET NULL,
   CONSTRAINT `stock_movements_to_warehouse_id_foreign` FOREIGN KEY (`to_warehouse_id`) REFERENCES `warehouses` (`id`) ON DELETE SET NULL,
   CONSTRAINT `stock_movements_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -502,7 +528,6 @@ CREATE TABLE `stock_movements` (
 
 LOCK TABLES `stock_movements` WRITE;
 /*!40000 ALTER TABLE `stock_movements` DISABLE KEYS */;
-INSERT INTO `stock_movements` VALUES (1,'bag_transformation',1,NULL,2,2,2,NULL,2,NULL,1,'2026-02-22 08:01:54','2026-02-22 08:01:54'),(2,'warehouse_transfer',1,NULL,2,1,NULL,NULL,1,NULL,1,'2026-02-22 08:03:47','2026-02-22 08:03:47'),(3,'warehouse_transfer',1,NULL,2,1,NULL,NULL,1,NULL,1,'2026-02-22 08:04:45','2026-02-22 08:04:45'),(4,'bag_transformation',1,NULL,1,1,2,NULL,1,NULL,1,'2026-02-22 08:05:14','2026-02-22 08:05:14'),(5,'warehouse_transfer',1,NULL,2,1,NULL,NULL,1,NULL,1,'2026-02-22 08:14:08','2026-02-22 08:14:08'),(6,'in',3,NULL,NULL,1,NULL,NULL,10,NULL,1,'2026-02-25 15:22:04','2026-02-25 15:22:04'),(7,'in',3,NULL,NULL,1,NULL,NULL,20,NULL,1,'2026-02-25 15:22:33','2026-02-25 15:22:33'),(8,'in',2,NULL,NULL,1,NULL,NULL,10,NULL,1,'2026-02-25 15:36:48','2026-02-25 15:36:48'),(9,'bag_transformation',2,NULL,1,1,1,NULL,2,NULL,1,'2026-02-25 15:37:13','2026-02-25 15:37:13'),(10,'in',2,NULL,NULL,1,NULL,NULL,5,NULL,1,'2026-02-25 15:38:34','2026-02-25 15:38:34'),(11,'bag_transformation',2,NULL,1,1,1,NULL,2,NULL,1,'2026-02-25 15:39:06','2026-02-25 15:39:06'),(12,'in',4,NULL,NULL,2,NULL,NULL,5,NULL,1,'2026-02-25 15:59:42','2026-02-25 15:59:42'),(13,'in',1,NULL,NULL,1,NULL,NULL,10,NULL,1,'2026-02-26 10:39:35','2026-02-26 10:39:35');
 /*!40000 ALTER TABLE `stock_movements` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -537,7 +562,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'Admin',999,'admin',NULL,'admin@peace.com',NULL,'$2y$12$rzbc6io7sVWY3rnvu0W.MOlclGeuMVfGY14bY4d4RTDBbGCDInyN2',NULL,'2026-02-22 07:54:27','2026-02-22 07:54:27');
+INSERT INTO `users` VALUES (1,'Admin',999,'admin',NULL,'admin@peace.com',NULL,'$2y$12$F2/t/zxM0e/ibq5mSOncJOUgRz8YAezwIdSETMqbMEZ/1yGDSZ1Zu',NULL,'2026-02-28 15:57:21','2026-02-28 15:57:21');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -564,7 +589,7 @@ CREATE TABLE `warehouses` (
 
 LOCK TABLES `warehouses` WRITE;
 /*!40000 ALTER TABLE `warehouses` DISABLE KEYS */;
-INSERT INTO `warehouses` VALUES (1,'Shop 1 (Main)','Main Street','2026-02-22 07:54:27','2026-02-22 07:54:27'),(2,'Warehouse 2 (Storage)','Industrial Zone','2026-02-22 07:54:27','2026-02-22 07:54:27');
+INSERT INTO `warehouses` VALUES (1,'Shop','Main Street','2026-02-28 15:57:21','2026-02-28 15:57:54'),(2,'Storage','Industrial Zone','2026-02-28 15:57:21','2026-02-28 15:58:05');
 /*!40000 ALTER TABLE `warehouses` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -577,4 +602,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-02-26 18:51:12
+-- Dump completed on 2026-03-02 20:45:40

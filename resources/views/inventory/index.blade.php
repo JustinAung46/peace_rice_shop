@@ -25,19 +25,30 @@
     </div>
 
     {{-- Search & Filter (Placeholder for future functionality, but adds to the UI) --}}
-    <div class="mb-6 relative">
-        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+    <div class="mb-6 flex flex-col sm:flex-row gap-4">
+        <div class="relative flex-1">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </div>
+            <input type="text" id="inventorySearch" placeholder="Search products, variants, or SKU..." class="pl-10 w-full rounded-xl border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-3 transition-colors">
         </div>
-        <input type="text" id="inventorySearch" placeholder="Search products, variants, or SKU..." class="pl-10 w-full rounded-xl border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-3 transition-colors">
+        <div class="w-full sm:w-64">
+            <select id="categoryFilter" class="w-full rounded-xl border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-3 transition-colors">
+                <option value="">All Categories</option>
+                @foreach($categories as $category)
+                    <option value="{{ $category->id }}">{{ $category->name }}</option>
+                @endforeach
+            </select>
+        </div>
     </div>
 
     {{-- Product List --}}
     <div class="space-y-6" id="productList">
         @forelse($products as $product)
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow duration-300 product-card">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow duration-300 product-card" 
+             data-category-id="{{ $product->category_id }}">
             <div class="flex flex-col md:flex-row">
                 {{-- Product Info Sidebar --}}
                 <div class="md:w-64 bg-slate-50/50 border-b md:border-b-0 md:border-r border-slate-100 p-6 flex flex-col items-center md:items-start text-center md:text-left">
@@ -176,18 +187,27 @@
 </div>
 
 <script>
-    document.getElementById('inventorySearch').addEventListener('keyup', function() {
-        let filter = this.value.toLowerCase();
+    function filterInventory() {
+        let searchText = document.getElementById('inventorySearch').value.toLowerCase();
+        let selectedCategory = document.getElementById('categoryFilter').value;
         let productCards = document.querySelectorAll('.product-card');
 
         productCards.forEach(function(card) {
-            let text = card.textContent.toLowerCase();
-            if (text.includes(filter)) {
+            let cardText = card.textContent.toLowerCase();
+            let cardCategory = card.dataset.categoryId;
+            
+            let matchesSearch = cardText.includes(searchText);
+            let matchesCategory = !selectedCategory || cardCategory == selectedCategory;
+
+            if (matchesSearch && matchesCategory) {
                 card.style.display = '';
             } else {
                 card.style.display = 'none';
             }
         });
-    });
+    }
+
+    document.getElementById('inventorySearch').addEventListener('keyup', filterInventory);
+    document.getElementById('categoryFilter').addEventListener('change', filterInventory);
 </script>
 @endsection

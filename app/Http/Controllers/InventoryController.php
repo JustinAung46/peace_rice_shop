@@ -27,7 +27,8 @@ class InventoryController extends Controller
                 return $product;
             });
 
-        return view('inventory.index', compact('products'));
+        $categories = \App\Models\Category::all();
+        return view('inventory.index', compact('products', 'categories'));
     }
 
     public function create()
@@ -220,7 +221,16 @@ class InventoryController extends Controller
     {
         $products   = Product::with('variants')->get();
         $warehouses = \App\Models\Warehouse::all();
-        return view('inventory.transfer', compact('products', 'warehouses'));
+        $categories = \App\Models\Category::all();
+        $productsJson = $products->map(function ($p) {
+            return [
+                'id' => $p->id,
+                'name' => $p->name,
+                'category_id' => $p->category_id,
+                'variants' => $p->variants
+            ];
+        })->toJson();
+        return view('inventory.transfer', compact('products', 'warehouses', 'categories', 'productsJson'));
     }
 
     public function storeTransfer(Request $request, StockTransferService $transferService)
@@ -256,7 +266,16 @@ class InventoryController extends Controller
         })->get();
 
         $warehouses = \App\Models\Warehouse::all();
-        return view('inventory.transform', compact('products', 'warehouses'));
+        $categories = \App\Models\Category::all();
+        $productsJson = $products->map(function ($p) {
+            return [
+                'id' => $p->id,
+                'name' => $p->name,
+                'category_id' => $p->category_id,
+                'variants' => $p->variants
+            ];
+        })->toJson();
+        return view('inventory.transform', compact('products', 'warehouses', 'categories', 'productsJson'));
     }
 
     public function processTransform(Request $request)

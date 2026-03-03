@@ -48,6 +48,9 @@
                     </td>
                     <td class="px-6 py-4 font-medium text-slate-800">
                         {{ $movement->product ? $movement->product->name : 'Unknown Product' }}
+                        @if($movement->productVariant)
+                            <span class="text-xs text-blue-600 font-semibold block">{{ $movement->productVariant->name }}</span>
+                        @endif
                         @if($movement->product && $movement->product->pyi_per_bag)
                             <span class="text-xs text-slate-500 block">({{ $movement->product->pyi_per_bag }} Pyi)</span>
                         @endif
@@ -65,7 +68,12 @@
                         @elseif($movement->type === 'bag_transformation')
                             <div class="flex items-center text-xs">
                                 <span class="text-slate-500">To:</span>
-                                <span class="ml-1 font-medium text-slate-800">{{ $movement->targetProduct ? $movement->targetProduct->name : 'N/A' }}</span>
+                                <div class="ml-1">
+                                    <span class="font-medium text-slate-800">{{ $movement->targetProduct ? $movement->targetProduct->name : 'N/A' }}</span>
+                                    @if($movement->targetVariant)
+                                        <span class="text-xs text-blue-600 font-semibold block">{{ $movement->targetVariant->name }}</span>
+                                    @endif
+                                </div>
                                 @if($movement->targetProduct && $movement->targetProduct->pyi_per_bag)
                                     <span class="ml-1 text-slate-500">({{ $movement->targetProduct->pyi_per_bag }} Pyi)</span>
                                 @endif

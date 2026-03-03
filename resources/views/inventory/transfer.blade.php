@@ -12,14 +12,26 @@
         @csrf
         <div class="space-y-5">
 
+            {{-- Category Filter --}}
+            <div>
+                <label class="block text-base font-bold text-slate-700 mb-2">Category Filter</label>
+                <select id="category-filter" onchange="filterProducts(this.value)"
+                    class="w-full px-4 py-3 text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
+                    <option value="">All Categories</option>
+                    @foreach($categories as $category)
+                        <option value="{{ $category->id }}">{{ $category->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
             {{-- Product --}}
             <div>
                 <label class="block text-base font-bold text-slate-700 mb-2">Product <span class="text-red-500">*</span></label>
                 <select id="product-select" onchange="loadVariants(this.value)"
-                    class="w-full px-4 py-3 text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
+                    class="w-full px-4 py-3 text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white" required>
                     <option value="">Select Product</option>
                     @foreach($products as $product)
-                        <option value="{{ $product->id }}" data-variants="{{ $product->variants->toJson() }}">
+                        <option value="{{ $product->id }}" data-variants="{{ $product->variants->toJson() }}" data-category-id="{{ $product->category_id }}">
                             {{ $product->name }}
                         </option>
                     @endforeach
@@ -74,13 +86,51 @@
 </div>
 
 <script>
+const allProducts = {!! $productsJson !!};
+
+function filterProducts(categoryId) {
+    const productSelect = document.getElementById('product-select');
+    const currentSelectedId = productSelect.value;
+
+    // Clear and rebuild options
+    productSelect.innerHTML = '<option value="">Select Product</option>';
+    
+    let stillHasCurrentSelection = false;
+
+    allProducts.forEach(product => {
+        if (!categoryId || product.category_id == categoryId) {
+            const opt = document.createElement('option');
+            opt.value = product.id;
+            opt.textContent = product.name;
+            opt.dataset.variants = JSON.stringify(product.variants);
+            opt.dataset.categoryId = product.category_id;
+            
+            if (product.id == currentSelectedId) {
+                opt.selected = true;
+                stillHasCurrentSelection = true;
+            }
+            
+            productSelect.appendChild(opt);
+        }
+    });
+
+    // If currently selected product is now hidden, reset it
+    if (currentSelectedId && !stillHasCurrentSelection) {
+        productSelect.value = "";
+        loadVariants("");
+    }
+}
+
 function loadVariants(productId) {
     const variantSelect = document.getElementById('variant-select');
     variantSelect.innerHTML = '<option value="">— Select variant —</option>';
     if (!productId) return;
-    const option = document.querySelector(`#product-select option[value="${productId}"]`);
-    if (!option) return;
-    const variants = JSON.parse(option.dataset.variants || '[]');
+    
+    const productSelect = document.getElementById('product-select');
+    const opt = productSelect.options[productSelect.selectedIndex];
+    if (!opt) return;
+    
+    const variants = JSON.parse(opt.dataset.variants || '[]');
     variants.forEach(v => {
         const opt = document.createElement('option');
         opt.value = v.id;
@@ -88,5 +138,13 @@ function loadVariants(productId) {
         variantSelect.appendChild(opt);
     });
 }
+
+// Initial filter in case there's a default or page reload behavior
+window.addEventListener('DOMContentLoaded', () => {
+    const catFilter = document.getElementById('category-filter');
+    if (catFilter.value) {
+        filterProducts(catFilter.value);
+    }
+});
 </script>
 @endsection

@@ -10,9 +10,11 @@ class StockMovementController extends Controller
     {
         $movements = \App\Models\StockMovement::with([
             'product', 
+            'productVariant',
             'fromWarehouse', 
             'toWarehouse', 
             'targetProduct', 
+            'targetVariant',
             'user'
         ])->latest()->paginate(20);
 
