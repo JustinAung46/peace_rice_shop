@@ -43,7 +43,7 @@ class InventoryController extends Controller
             'name'            => 'required|string|max:255',
             'category_id'     => 'nullable|exists:categories,id',
             'description'     => 'nullable|string',
-            'image'           => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'image'           => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:20480',
             // Variants array
             'variants'               => 'required|array|min:1',
             'variants.*.name'        => 'required|string|max:255',
@@ -60,7 +60,20 @@ class InventoryController extends Controller
         $data['is_active'] = $request->boolean('is_active', true);
 
         if ($request->hasFile('image')) {
-            $data['image_path'] = $request->file('image')->store('products', 'public');
+            $file = $request->file('image');
+            $data['image_path'] = $file->store('products', 'public');
+            
+            try {
+                $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
+                $img = $manager->read($file->getRealPath());
+                $img->cover(300, 300);
+                
+                $filename = basename($data['image_path']);
+                \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('products/thumbnails');
+                \Illuminate\Support\Facades\Storage::disk('public')->put('products/thumbnails/' . $filename, (string) $img->toJpeg(80));
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Thumbnail generation failed: ' . $e->getMessage());
+            }
         }
 
         $product = Product::create($data);
@@ -93,7 +106,7 @@ class InventoryController extends Controller
             'name'            => 'required|string|max:255',
             'category_id'     => 'nullable|exists:categories,id',
             'description'     => 'nullable|string',
-            'image'           => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'image'           => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:20480',
             'variants'               => 'required|array|min:1',
             'variants.*.name'        => 'required|string|max:255',
             'variants.*.unit_label'  => 'required|string|max:50',
@@ -111,8 +124,26 @@ class InventoryController extends Controller
         if ($request->hasFile('image')) {
             if ($inventory->image_path) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($inventory->image_path);
+                
+                $oldFilename = basename($inventory->image_path);
+                if (\Illuminate\Support\Facades\Storage::disk('public')->exists('products/thumbnails/' . $oldFilename)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete('products/thumbnails/' . $oldFilename);
+                }
             }
-            $data['image_path'] = $request->file('image')->store('products', 'public');
+            $file = $request->file('image');
+            $data['image_path'] = $file->store('products', 'public');
+            
+            try {
+                $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
+                $img = $manager->read($file->getRealPath());
+                $img->cover(300, 300);
+                
+                $filename = basename($data['image_path']);
+                \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('products/thumbnails');
+                \Illuminate\Support\Facades\Storage::disk('public')->put('products/thumbnails/' . $filename, (string) $img->toJpeg(80));
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Thumbnail generation failed: ' . $e->getMessage());
+            }
         }
 
         $inventory->update($data);
@@ -219,7 +250,14 @@ class InventoryController extends Controller
 
     public function transfer()
     {
-        $products   = Product::with('variants')->get();
+        $products = Product::where('is_active', true)
+            ->with(['variants' => function($q) {
+                $q->with(['stockBatches' => function($sq) {
+                    $sq->where('remaining_quantity', '>', 0)
+                      ->select('id', 'product_variant_id', 'warehouse_id', 'remaining_quantity');
+                }]);
+            }])
+            ->get();
         $warehouses = \App\Models\Warehouse::all();
         $categories = \App\Models\Category::all();
         $productsJson = $products->map(function ($p) {
@@ -227,7 +265,15 @@ class InventoryController extends Controller
                 'id' => $p->id,
                 'name' => $p->name,
                 'category_id' => $p->category_id,
-                'variants' => $p->variants
+                'variants' => $p->variants->map(function($v) {
+                    return [
+                        'id' => $v->id,
+                        'name' => $v->name,
+                        'selling_price' => $v->selling_price,
+                        'unit_label' => $v->unit_label,
+                        'stock_batches' => $v->stockBatches
+                    ];
+                })
             ];
         })->toJson();
         return view('inventory.transfer', compact('products', 'warehouses', 'categories', 'productsJson'));
@@ -260,7 +306,11 @@ class InventoryController extends Controller
     {
         // Only show products that have at least one variant with pyi_per_bag set
         $products = Product::with(['variants' => function ($q) {
-            $q->whereNotNull('pyi_per_bag');
+            $q->whereNotNull('pyi_per_bag')
+              ->with(['stockBatches' => function($sq) {
+                  $sq->where('remaining_quantity', '>', 0)
+                    ->select('id', 'product_variant_id', 'warehouse_id', 'remaining_quantity');
+              }]);
         }])->whereHas('variants', function ($q) {
             $q->whereNotNull('pyi_per_bag');
         })->get();
@@ -272,7 +322,16 @@ class InventoryController extends Controller
                 'id' => $p->id,
                 'name' => $p->name,
                 'category_id' => $p->category_id,
-                'variants' => $p->variants
+                'variants' => $p->variants->map(function($v) {
+                    return [
+                        'id' => $v->id,
+                        'name' => $v->name,
+                        'selling_price' => $v->selling_price,
+                        'unit_label' => $v->unit_label,
+                        'pyi_per_bag' => $v->pyi_per_bag,
+                        'stock_batches' => $v->stockBatches
+                    ];
+                })
             ];
         })->toJson();
         return view('inventory.transform', compact('products', 'warehouses', 'categories', 'productsJson'));

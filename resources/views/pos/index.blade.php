@@ -55,11 +55,11 @@
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 cursor-pointer hover:border-indigo-500 hover:shadow-md transition-all product-card group transform active:scale-95"
                      data-category="{{ $product->category_id ?? 'uncategorized' }}"
                      data-name="{{ strtolower($product->name) }}"
-                     onclick="openVariantPicker({{ $product->id }}, '{{ addslashes($product->name) }}', {{ $product->variants->toJson() }}, '{{ $product->image_path ? asset('storage/' . $product->image_path) : '' }}')">
+                     onclick="openVariantPicker({{ $product->id }}, '{{ addslashes($product->name) }}', {{ $product->variants->toJson() }}, '{{ $product->thumbnail_url }}')">
 
                     <div class="h-28 bg-slate-50 rounded-xl mb-3 flex items-center justify-center text-slate-300 group-hover:bg-slate-100 transition-colors overflow-hidden">
                         @if($product->image_path)
-                            <img src="{{ asset('storage/' . $product->image_path) }}" class="h-full w-full object-cover" loading="lazy" width="200" height="200">
+                            <img src="{{ $product->thumbnail_url }}" class="h-full w-full object-cover" loading="lazy" width="200" height="200">
                         @else
                             <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
                         @endif
