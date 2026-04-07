@@ -85,7 +85,10 @@
                 <svg class="w-5 h-5 mr-2 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
                 Current Order
             </h2>
-            <button onclick="clearCart()" class="text-xs text-red-500 hover:text-red-700 font-medium">Clear</button>
+            <div class="flex gap-2">
+                <a href="{{ route('reports.receipts') }}" class="text-xs px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 font-bold transition-colors border border-indigo-200 flex items-center justify-center" title="Recent Transactions">Recent Sales</a>
+                <button onclick="clearCart()" class="text-xs px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-bold transition-colors border border-red-100" title="Clear Cart">Clear</button>
+            </div>
         </div>
 
         <div class="flex-1 overflow-y-auto p-4 space-y-3" id="cart-items">
@@ -155,7 +158,8 @@
         routes: {
             checkStock: '{{ route("pos.checkStock") }}',
             store: '{{ route("pos.store") }}',
-            transferStock: '{{ route("pos.transferStock") }}'
+            transferStock: '{{ route("pos.transferStock") }}',
+            cancelSale: '{{ url("pos/sales") }}'
         },
         warehouses: {
             @foreach($warehouses as $w)

@@ -14,7 +14,9 @@ class ReportController extends Controller
         $today = Carbon::today();
 
         // Calculate stats manually since profit column is removed
-        $todaysItems = SaleItem::whereDate('created_at', $today)->get();
+        $todaysItems = SaleItem::whereHas('sale', function($q) {
+            $q->where('status', '!=', 'cancelled');
+        })->whereDate('created_at', $today)->get();
         
         $totalRevenue = $todaysItems->sum('total_price');
         $totalCost = $todaysItems->sum('total_cost');
@@ -37,6 +39,9 @@ class ReportController extends Controller
                                         COUNT(DISTINCT sale_id) as transaction_count, 
                                         SUM(total_price) as revenue,
                                         SUM(total_cost) as total_cost')
+            ->whereHas('sale', function($q) {
+                $q->where('status', '!=', 'cancelled');
+            })
             ->whereDate('created_at', '>=', $startDate)
             ->whereDate('created_at', '<=', $endDate)
             ->groupBy('date')
@@ -60,6 +65,9 @@ class ReportController extends Controller
 
         $query = SaleItem::with(['product', 'product.category', 'variant'])
             ->selectRaw('product_id, product_variant_id, SUM(quantity) as total_quantity, SUM(total_price) as total_revenue, SUM(total_cost) as total_cost')
+            ->whereHas('sale', function($q) {
+                $q->where('status', '!=', 'cancelled');
+            })
             ->whereDate('created_at', '>=', $startDate)
             ->whereDate('created_at', '<=', $endDate)
             ->groupBy('product_id', 'product_variant_id');

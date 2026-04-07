@@ -18,6 +18,7 @@ class DashboardController extends Controller
         $today = Carbon::today();
 
         $todayStats = Sale::whereDate('created_at', $today)
+            ->where('status', '!=', 'cancelled')
             ->selectRaw('count(*) as count, sum(total_amount) as total_amount')
             ->first();
 
@@ -25,7 +26,7 @@ class DashboardController extends Controller
         $totalTransactionsToday = $todayStats->count ?? 0;
         
         $totalBagsSoldToday = SaleItem::whereHas('sale', function ($query) use ($today) {
-            $query->whereDate('created_at', $today);
+            $query->whereDate('created_at', $today)->where('status', '!=', 'cancelled');
         })->sum('quantity');
 
         // 2. Top Selling Products (This Month)
@@ -33,7 +34,7 @@ class DashboardController extends Controller
         
         $topSellingProducts = SaleItem::select('product_id', DB::raw('sum(quantity) as total_quantity'))
             ->whereHas('sale', function($q) use ($thisMonth) {
-                $q->where('created_at', '>=', $thisMonth);
+                $q->where('created_at', '>=', $thisMonth)->where('status', '!=', 'cancelled');
             })
             ->groupBy('product_id')
             ->orderByDesc('total_quantity')
@@ -44,6 +45,9 @@ class DashboardController extends Controller
         // Fallback to all time if empty
         if ($topSellingProducts->isEmpty()) {
              $topSellingProducts = SaleItem::select('product_id', DB::raw('sum(quantity) as total_quantity'))
+                ->whereHas('sale', function($q) {
+                    $q->where('status', '!=', 'cancelled');
+                })
                 ->groupBy('product_id')
                 ->orderByDesc('total_quantity')
                 ->with('product')
@@ -55,6 +59,7 @@ class DashboardController extends Controller
         $startDate = Carbon::now()->subDays(29)->startOfDay();
         
         $dailySales = Sale::where('created_at', '>=', $startDate)
+            ->where('status', '!=', 'cancelled')
             ->selectRaw('DATE(created_at) as date, sum(total_amount) as amount')
             ->groupBy('date')
             ->get()
@@ -78,7 +83,7 @@ class DashboardController extends Controller
         // 4. Sales by Rice Type (This Month) - Reuse logic but more efficient
         $salesByRiceType = SaleItem::select('product_id', DB::raw('sum(quantity) as total_quantity'))
             ->whereHas('sale', function($q) use ($thisMonth) {
-                 $q->where('created_at', '>=', $thisMonth);
+                 $q->where('created_at', '>=', $thisMonth)->where('status', '!=', 'cancelled');
             })
             ->groupBy('product_id')
             ->with('product')

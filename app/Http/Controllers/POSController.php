@@ -258,4 +258,46 @@ class POSController extends Controller
             return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
         }
     }
+
+    public function cancel(Sale $sale)
+    {
+        if ($sale->status === 'cancelled') {
+            return response()->json(['success' => false, 'message' => 'Sale is already cancelled.'], 400);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Restore Stock
+            foreach ($sale->items as $item) {
+                // Get all batches deducted for this item
+                $saleItemBatches = \App\Models\SaleItemBatch::where('sale_item_id', $item->id)->get();
+                foreach ($saleItemBatches as $batch) {
+                    $stockBatch = \App\Models\StockBatch::find($batch->stock_batch_id);
+                    if ($stockBatch) {
+                        $stockBatch->increment('remaining_quantity', $batch->quantity);
+                    }
+                }
+            }
+
+            // Reverse Customer Credit (if any)
+            $creditPaymentAmount = $sale->payments()->where('payment_method', 'Credit')->sum('amount');
+            if ($creditPaymentAmount > 0 && $sale->customer_id) {
+                DB::table('customers')
+                    ->where('id', $sale->customer_id)
+                    ->decrement('credit_balance', $creditPaymentAmount);
+            }
+
+            // Status Update
+            $sale->update(['status' => 'cancelled']);
+
+            DB::commit();
+
+            return response()->json(['success' => true, 'message' => 'Sale cancelled successfully.']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Failed to cancel sale: ' . $e->getMessage()], 500);
+        }
+    }
 }

@@ -626,7 +626,19 @@ async function processCheckout() {
         checkoutBtn.innerText = 'Processing...';
         const response = await fetch(window.POS_CONFIG.routes.store, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': window.POS_CONFIG.csrf }, body: JSON.stringify(payload) });
         const result = await response.json();
-        if (result.success) { Swal.fire({ icon: 'success', title: 'Sale Successful!', text: 'Invoice: ' + result.invoice }).then(() => { cart = {}; window.location.reload(); }); }
+        if (result.success) { 
+            Swal.fire({ 
+                icon: 'success', 
+                title: 'Sale Successful!', 
+                text: 'Invoice: ' + result.invoice,
+                timer: 3000,
+                timerProgressBar: true,
+                showConfirmButton: true
+            }).then(() => { 
+                cart = {}; 
+                window.location.reload(); 
+            }); 
+        }
         else alert('Error: ' + result.message);
     } catch (error) { alert('System Error: ' + error.message); } finally { checkoutBtn.disabled = false; checkoutBtn.innerText = 'Checkout'; }
 }

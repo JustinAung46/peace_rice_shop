@@ -20,6 +20,7 @@ class CreditController extends Controller
 
         // Build query for credit sales (sales that have a Credit payment)
         $query = Sale::with(['customer', 'payments', 'items'])
+            ->where('status', '!=', 'cancelled')
             ->whereHas('payments', function ($q) {
                 $q->where('payment_method', 'Credit');
             });
@@ -52,6 +53,7 @@ class CreditController extends Controller
         // All credit sales for this customer
         $creditSales = Sale::with(['items.variant.product', 'payments'])
             ->where('customer_id', $customer->id)
+            ->where('status', '!=', 'cancelled')
             ->whereHas('payments', function ($q) {
                 $q->where('payment_method', 'Credit');
             })

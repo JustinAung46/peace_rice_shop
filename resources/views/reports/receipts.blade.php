@@ -98,7 +98,9 @@
                             @endif
                         </td>
                         <td class="px-5 py-3 text-center">
-                            @if($receipt->payment_status === 'paid')
+                            @if($receipt->status === 'cancelled')
+                                <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">Cancelled</span>
+                            @elseif($receipt->payment_status === 'paid')
                                 <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">Paid</span>
                             @elseif($receipt->payment_status === 'partial')
                                 <span class="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">Partial</span>
@@ -106,13 +108,18 @@
                                 <span class="text-xs font-semibold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100">Unpaid</span>
                             @endif
                         </td>
-                        <td class="px-5 py-3 text-right font-medium text-slate-800">{{ number_format($receipt->total_amount) }} Ks</td>
+                        <td class="px-5 py-3 text-right font-medium {{ $receipt->status === 'cancelled' ? 'line-through text-slate-400' : 'text-slate-800' }}">{{ number_format($receipt->total_amount) }} Ks</td>
                         <td class="px-5 py-3 text-center">
                             <button onclick="document.getElementById('modal-{{ $receipt->id }}').classList.remove('hidden')"
                                 class="inline-flex items-center gap-1 text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-md hover:bg-slate-200 transition-colors font-medium">
                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                 View
                             </button>
+                            @if($receipt->status !== 'cancelled')
+                            <button onclick="cancelReportSale({{ $receipt->id }}, '{{ $receipt->invoice_number }}')" class="ml-1 inline-flex items-center gap-1 text-xs bg-white text-rose-600 border border-rose-200 px-3 py-1.5 rounded-md hover:bg-rose-50 transition-colors font-medium">
+                                Cancel
+                            </button>
+                            @endif
 
                             {{-- Modal for this receipt --}}
                             <div id="modal-{{ $receipt->id }}" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex flex-col items-center justify-center p-4">
@@ -147,7 +154,9 @@
                                             </div>
                                             <div class="text-right">
                                                 <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Status</p>
-                                                @if($receipt->payment_status === 'paid')
+                                                @if($receipt->status === 'cancelled')
+                                                    <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">Cancelled</span>
+                                                @elseif($receipt->payment_status === 'paid')
                                                     <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">Paid</span>
                                                 @elseif($receipt->payment_status === 'partial')
                                                     <span class="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">Partial</span>
@@ -254,6 +263,7 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 // Close modal when clicking outside
 document.addEventListener('click', function(e) {
@@ -261,5 +271,38 @@ document.addEventListener('click', function(e) {
         e.target.classList.add('hidden');
     }
 });
+
+async function cancelReportSale(saleId, invoiceNumber) {
+    const result = await Swal.fire({
+        title: 'Cancel Sale?',
+        text: `Are you sure you want to cancel the sale ${invoiceNumber}? This will return stock and restore customer credit balances completely.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#cbd5e1',
+        confirmButtonText: 'Yes, Cancel it!'
+    });
+
+    if (result.isConfirmed) {
+        Swal.fire({ title: 'Cancelling...', text: 'Please wait', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        try {
+            const url = '{{ url("pos/sales") }}/' + saleId + '/cancel';
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                Swal.fire({ icon: 'success', title: 'Cancelled', text: 'Sale has been cancelled successfully.', timer: 2000, showConfirmButton: false }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                throw new Error(data.message || 'Unknown error');
+            }
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: 'Error', text: e.message || 'Failed to cancel sale.' });
+        }
+    }
+}
 </script>
 @endsection

@@ -39,6 +39,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('pos', [POSController::class, 'store'])->name('pos.store');
         Route::post('pos/check-stock', [POSController::class, 'checkStock'])->name('pos.checkStock');
         Route::post('pos/transfer-stock', [POSController::class, 'transferStock'])->name('pos.transferStock');
+        Route::post('pos/sales/{sale}/cancel', [POSController::class, 'cancel'])->name('pos.sales.cancel');
         Route::resource('customers', App\Http\Controllers\CustomerController::class);
         Route::get('credits', [CreditController::class, 'index'])->name('credits.index');
         Route::get('credits/{customer}/history', [CreditController::class, 'history'])->name('credits.history');
