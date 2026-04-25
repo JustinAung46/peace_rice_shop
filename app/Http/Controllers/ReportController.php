@@ -84,8 +84,8 @@ class ReportController extends Controller
 
         $items = $query->orderByDesc('total_revenue')->paginate(50)->withQueryString();
 
-        $products = \App\Models\Product::orderBy('name')->get();
-        $categories = \App\Models\Category::orderBy('name')->get();
+        $products = \App\Models\Product::withActiveCategory()->orderBy('name')->get();
+        $categories = \App\Models\Category::active()->orderBy('name')->get();
 
         return view('reports.items', compact('items', 'products', 'categories', 'startDate', 'endDate'));
     }

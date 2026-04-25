@@ -47,4 +47,11 @@ class Product extends Model
         // Fallback to original image
         return asset('storage/' . $this->image_path);
     }
+
+    public function scopeWithActiveCategory($query)
+    {
+        return $query->whereHas('category', function ($q) {
+            $q->where('is_active', true);
+        });
+    }
 }

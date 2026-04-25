@@ -30,6 +30,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('stock/transfer/store', [InventoryController::class, 'storeTransfer'])->name('inventory.transfer.store');
         Route::get('stock/transform', [InventoryController::class, 'transform'])->name('inventory.transform');
         Route::post('stock/transform/process', [InventoryController::class, 'processTransform'])->name('inventory.transform.process');
+        Route::get('stock/batches', [InventoryController::class, 'batches'])->name('inventory.batches');
         Route::get('stock/movements', [StockMovementController::class, 'index'])->name('inventory.movements');
         Route::resource('warehouses', WarehouseController::class);
     });

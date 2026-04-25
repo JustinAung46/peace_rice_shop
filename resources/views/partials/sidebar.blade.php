@@ -58,6 +58,14 @@
                     <span class="text-base font-medium">Stock Transfer</span>
                 </a>
             </li>
+            <li>
+                <a href="{{ route('inventory.batches') }}" class="group flex items-center px-4 py-3.5 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors {{ request()->routeIs('inventory.batches') ? 'bg-slate-800 text-white' : '' }}">
+                    <svg class="w-6 h-6 mr-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                    <span class="text-base font-medium">Stock Batches</span>
+                </a>
+            </li>
             @endcan
 
             <li class="mt-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Sales</li>

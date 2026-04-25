@@ -34,6 +34,8 @@ class CategoryController extends Controller
             'description' => 'nullable|string',
         ]);
 
+        $validated['is_active'] = $request->has('is_active');
+
         Category::create($validated);
 
         return redirect()->route('categories.index')->with('success', 'Category created successfully.');
@@ -64,6 +66,8 @@ class CategoryController extends Controller
             'name' => 'required|string|max:255|unique:categories,name,' . $category->id,
             'description' => 'nullable|string',
         ]);
+
+        $validated['is_active'] = $request->has('is_active');
 
         $category->update($validated);
 

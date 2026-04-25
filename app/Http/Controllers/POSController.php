@@ -20,7 +20,7 @@ class POSController extends Controller
     public function index()
     {
         // Load products with variants + stock count per variant in a more optimized way
-        $products = Product::where('is_active', true)
+        $products = Product::withActiveCategory()->where('is_active', true)
             ->with(['category', 'variants' => function($q) {
                 $q->where('is_active', true)
                   ->withSum(['stockBatches as stock_count' => function($sq) {
@@ -33,7 +33,7 @@ class POSController extends Controller
             }])
             ->get();
 
-        $categories = Category::all();
+        $categories = Category::active()->get();
         $customers  = Customer::all();
         $warehouses = Warehouse::all();
 

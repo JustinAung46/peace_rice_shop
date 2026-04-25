@@ -96,7 +96,7 @@ class DashboardController extends Controller
             });
 
         // 5. Stock Status & Alerts (Optimized with withSum)
-        $stockStatus = Product::withSum(['stockBatches as current_stock' => function($query) {
+        $stockStatus = Product::withActiveCategory()->withSum(['stockBatches as current_stock' => function($query) {
                 $query->where('remaining_quantity', '>', 0);
             }], 'remaining_quantity')
             ->get()

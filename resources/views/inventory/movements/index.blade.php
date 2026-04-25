@@ -8,6 +8,62 @@
     </a>
 </div>
 
+<!-- Filters -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
+    <form action="{{ route('inventory.movements') }}" method="GET" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-end">
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Type</label>
+            <select name="type" class="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500">
+                <option value="">All Types</option>
+                @foreach($types as $type)
+                <option value="{{ $type }}" {{ request('type') == $type ? 'selected' : '' }}>
+                    {{ ucfirst(str_replace('_', ' ', $type)) }}
+                </option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Category</label>
+            <select name="category_id" id="filter_category" class="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500">
+                <option value="">All Categories</option>
+                @foreach($categories as $category)
+                <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>
+                    {{ $category->name }}
+                </option>
+                @endforeach
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Product</label>
+            <select name="product_id" id="filter_product" class="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500">
+                <option value="">All Products</option>
+                @foreach($products as $product)
+                <option value="{{ $product->id }}" data-category="{{ $product->category_id }}" {{ request('product_id') == $product->id ? 'selected' : '' }}>
+                    {{ $product->name }}
+                </option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Date Range</label>
+            <div class="flex items-center space-x-2">
+                <input type="date" name="start_date" value="{{ request('start_date') }}" class="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500">
+                <span class="text-slate-500">-</span>
+                <input type="date" name="end_date" value="{{ request('end_date') }}" class="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500">
+            </div>
+        </div>
+        <div class="flex space-x-2 h-[42px] mt-6 md:mt-0">
+            <button type="submit" class="flex-1 bg-blue-600 text-white rounded-lg px-4 hover:bg-blue-700 transition-colors flex items-center justify-center">
+                Filter
+            </button>
+            <a href="{{ route('inventory.movements') }}" class="px-4 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors flex items-center justify-center">
+                Clear
+            </a>
+        </div>
+    </form>
+</div>
+
 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
     <div class="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
         <h2 class="font-semibold text-slate-700">Recent Transfers & Transformations</h2>
@@ -110,4 +166,48 @@
     </div>
     @endif
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const categorySelect = document.getElementById('filter_category');
+        const productSelect = document.getElementById('filter_product');
+        
+        // Save original options to memory so we can append/remove them reliably across all browsers (like Safari)
+        const originalOptions = Array.from(productSelect.options);
+        
+        function filterProducts() {
+            const selectedCategoryId = categorySelect.value;
+            const currentSelected = productSelect.value;
+            
+            // Clear current options from the select
+            productSelect.innerHTML = '';
+            
+            let foundValidOption = false;
+            
+            originalOptions.forEach(option => {
+                // Always keep the "All Products" option
+                if (option.value === "") {
+                    productSelect.appendChild(option);
+                    if (currentSelected === "") foundValidOption = true;
+                    return;
+                }
+                
+                const optionCategory = option.getAttribute('data-category');
+                
+                // If no category is selected, or if the product's category matches the dropdown
+                if (selectedCategoryId === "" || optionCategory === selectedCategoryId) {
+                    productSelect.appendChild(option);
+                    if (currentSelected === option.value) foundValidOption = true;
+                }
+            });
+            
+            // Reset to "All Products" if the previously selected product gets filtered out
+            productSelect.value = foundValidOption ? currentSelected : "";
+        }
+        
+        categorySelect.addEventListener('change', filterProducts);
+        // Run once to initialize on load
+        filterProducts();
+    });
+</script>
 @endsection

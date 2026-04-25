@@ -16,7 +16,7 @@ class InventoryController extends Controller
 
     public function index()
     {
-        $products = Product::with(['category', 'variants'])
+        $products = Product::withActiveCategory()->with(['category', 'variants'])
             ->get()
             ->map(function ($product) {
                 // Attach total_stock per variant
@@ -27,13 +27,13 @@ class InventoryController extends Controller
                 return $product;
             });
 
-        $categories = \App\Models\Category::all();
+        $categories = \App\Models\Category::active()->get();
         return view('inventory.index', compact('products', 'categories'));
     }
 
     public function create()
     {
-        $categories = \App\Models\Category::all();
+        $categories = \App\Models\Category::active()->get();
         return view('inventory.create', compact('categories'));
     }
 
@@ -96,7 +96,7 @@ class InventoryController extends Controller
     public function edit(Product $inventory)
     {
         $inventory->load('variants');
-        $categories = \App\Models\Category::all();
+        $categories = \App\Models\Category::active()->get();
         return view('inventory.edit', ['product' => $inventory, 'categories' => $categories]);
     }
 
@@ -187,9 +187,9 @@ class InventoryController extends Controller
 
     public function stock(Request $request)
     {
-        $products   = Product::with('variants')->get();
+        $products   = Product::withActiveCategory()->with('variants')->get();
         $warehouses = \App\Models\Warehouse::all();
-        $categories = \App\Models\Category::all();
+        $categories = \App\Models\Category::active()->get();
         $prefProductId = $request->query('product_id');
         $prefVariantId = $request->query('product_variant_id');
         $prefWarehouseId = $request->query('warehouse_id');
@@ -246,11 +246,44 @@ class InventoryController extends Controller
         return redirect()->route('inventory.index')->with('success', 'Stock added successfully.');
     }
 
+    // ─── Batches List ────────────────────────────────────────────────────────
+    
+    public function batches(Request $request)
+    {
+        $query = StockBatch::with(['product', 'variant', 'warehouse'])
+            ->where('remaining_quantity', '>', 0);
+            
+        if ($request->has('product_id') && $request->product_id != '') {
+            $query->where('product_id', $request->product_id);
+        }
+        
+        if ($request->has('category_id') && $request->category_id != '') {
+            $query->whereHas('product', function($q) use ($request) {
+                $q->where('category_id', $request->category_id);
+            });
+        }
+        
+        if ($request->has('warehouse_id') && $request->warehouse_id != '') {
+            $query->where('warehouse_id', $request->warehouse_id);
+        }
+            
+        $batches = $query->orderBy('purchase_date', 'desc')
+                         ->orderBy('id', 'desc')
+                         ->paginate(20)
+                         ->withQueryString();
+                         
+        $products = Product::withActiveCategory()->orderBy('name')->get();
+        $categories = \App\Models\Category::active()->orderBy('name')->get();
+        $warehouses = \App\Models\Warehouse::orderBy('name')->get();
+        
+        return view('inventory.batches', compact('batches', 'products', 'categories', 'warehouses'));
+    }
+
     // ─── Transfer ─────────────────────────────────────────────────────────────
 
     public function transfer()
     {
-        $products = Product::where('is_active', true)
+        $products = Product::withActiveCategory()->where('is_active', true)
             ->with(['variants' => function($q) {
                 $q->with(['stockBatches' => function($sq) {
                     $sq->where('remaining_quantity', '>', 0)
@@ -259,7 +292,7 @@ class InventoryController extends Controller
             }])
             ->get();
         $warehouses = \App\Models\Warehouse::all();
-        $categories = \App\Models\Category::all();
+        $categories = \App\Models\Category::active()->get();
         $productsJson = $products->map(function ($p) {
             return [
                 'id' => $p->id,
@@ -282,22 +315,42 @@ class InventoryController extends Controller
     public function storeTransfer(Request $request, StockTransferService $transferService)
     {
         $validated = $request->validate([
-            'product_variant_id' => 'required|exists:product_variants,id',
-            'from_warehouse_id'  => 'required|exists:warehouses,id',
-            'to_warehouse_id'    => 'required|exists:warehouses,id|different:from_warehouse_id',
-            'quantity'           => 'required|integer|min:1',
+            'transfers' => 'required|string',
         ]);
 
-        $variant = ProductVariant::findOrFail($validated['product_variant_id']);
+        $transfers = json_decode($validated['transfers'], true);
 
-        $transferService->transferVariant(
-            $variant->id,
-            $validated['from_warehouse_id'],
-            $validated['to_warehouse_id'],
-            $validated['quantity']
-        );
+        if (!is_array($transfers) || empty($transfers)) {
+            return back()->with('error', 'No valid transfer items provided.');
+        }
 
-        return redirect()->route('inventory.index')->with('success', 'Stock transferred successfully.');
+        $validator = \Illuminate\Support\Facades\Validator::make(['items' => $transfers], [
+            'items.*.product_variant_id' => 'required|exists:product_variants,id',
+            'items.*.from_warehouse_id'  => 'required|exists:warehouses,id',
+            'items.*.to_warehouse_id'    => 'required|exists:warehouses,id|different:items.*.from_warehouse_id',
+            'items.*.quantity'           => 'required|integer|min:1',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        try {
+            DB::transaction(function () use ($transfers, $transferService) {
+                foreach ($transfers['items'] ?? $transfers as $item) {
+                    $transferService->transferVariant(
+                        $item['product_variant_id'],
+                        $item['from_warehouse_id'],
+                        $item['to_warehouse_id'],
+                        $item['quantity']
+                    );
+                }
+            });
+        } catch (\Exception $e) {
+            return back()->with('error', 'Transfer failed: ' . $e->getMessage());
+        }
+
+        return back()->with('success', 'Stock transferred successfully.');
     }
 
     // ─── Transform (rice bag size conversion) ────────────────────────────────
@@ -305,7 +358,7 @@ class InventoryController extends Controller
     public function transform()
     {
         // Only show products that have at least one variant with pyi_per_bag set
-        $products = Product::with(['variants' => function ($q) {
+        $products = Product::withActiveCategory()->with(['variants' => function ($q) {
             $q->whereNotNull('pyi_per_bag')
               ->with(['stockBatches' => function($sq) {
                   $sq->where('remaining_quantity', '>', 0)
@@ -316,7 +369,7 @@ class InventoryController extends Controller
         })->get();
 
         $warehouses = \App\Models\Warehouse::all();
-        $categories = \App\Models\Category::all();
+        $categories = \App\Models\Category::active()->get();
         $productsJson = $products->map(function ($p) {
             return [
                 'id' => $p->id,

@@ -38,7 +38,7 @@ class WarehouseController extends Controller
 
     public function show(Warehouse $warehouse)
     {
-        $categories = \App\Models\Category::all();
+        $categories = \App\Models\Category::active()->get();
         $rows = StockBatch::where('warehouse_id', $warehouse->id)
             ->where('remaining_quantity', '>', 0)
             ->with(['product.category', 'variant'])

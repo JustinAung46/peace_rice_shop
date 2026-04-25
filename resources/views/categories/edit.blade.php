@@ -24,6 +24,14 @@
                 <textarea name="description" rows="3" class="w-full px-4 py-3 text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">{{ old('description', $category->description) }}</textarea>
             </div>
 
+            <div class="mb-6">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="is_active" value="1" {{ old('is_active', $category->is_active ?? true) ? 'checked' : '' }} class="w-5 h-5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500">
+                    <span class="text-base font-bold text-slate-700">Active</span>
+                </label>
+                <p class="text-slate-500 text-xs mt-1">Inactive categories and their products will be hidden from the rest of the application.</p>
+            </div>
+
             <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
                 <a href="{{ route('categories.index') }}" class="px-4 py-2 text-slate-600 hover:text-slate-900 font-medium">Cancel</a>
                 <button type="submit" class="w-full sm:w-auto px-8 py-4 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-bold text-lg shadow-md shadow-indigo-200 transition-all">
