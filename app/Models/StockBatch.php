@@ -9,12 +9,13 @@ class StockBatch extends Model
     protected $fillable = [
         'product_id',
         'product_variant_id',
-        'warehouse_id', 
-        'original_quantity', 
-        'remaining_quantity', 
-        'cost_price', 
-        'purchase_date', 
-        'batch_code'
+        'warehouse_id',
+        'original_quantity',
+        'remaining_quantity',
+        'cost_price',
+        'purchase_date',
+        'batch_code',
+        'purchase_order_receipt_item_id',
     ];
 
     public function product()
@@ -30,6 +31,11 @@ class StockBatch extends Model
     public function warehouse()
     {
         return $this->belongsTo(Warehouse::class);
+    }
+
+    public function purchaseOrderReceiptItem()
+    {
+        return $this->belongsTo(PurchaseOrderReceiptItem::class);
     }
 
 }

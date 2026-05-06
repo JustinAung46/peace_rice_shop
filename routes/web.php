@@ -51,11 +51,28 @@ Route::middleware(['auth'])->group(function () {
         Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
         Route::get('reports/daily', [ReportController::class, 'dailyReport'])->name('reports.daily');
         Route::get('reports/items', [ReportController::class, 'saleItemsReport'])->name('reports.items');
+        Route::get('reports/items/export', [ReportController::class, 'exportSaleItems'])->name('reports.items.export');
         Route::get('reports/receipts', [ReportController::class, 'receipts'])->name('reports.receipts');
     });
 
     Route::middleware(['can:admin'])->group(function () {
         Route::resource('accounts', AccountController::class);
+
+        // Suppliers
+        Route::resource('suppliers', App\Http\Controllers\SupplierController::class);
+
+        // Purchase Orders
+        Route::resource('purchase-orders', App\Http\Controllers\PurchaseOrderController::class)
+            ->except(['edit', 'update']);
+        Route::get('purchase-orders/{purchaseOrder}/receive',
+            [App\Http\Controllers\PurchaseOrderController::class, 'createReceipt'])
+            ->name('purchase-orders.receive');
+        Route::post('purchase-orders/{purchaseOrder}/receive',
+            [App\Http\Controllers\PurchaseOrderController::class, 'storeReceipt'])
+            ->name('purchase-orders.receive.store');
+        Route::post('purchase-orders/{purchaseOrder}/payment',
+            [App\Http\Controllers\PurchaseOrderController::class, 'storePayment'])
+            ->name('purchase-orders.payment.store');
     });
 });
 

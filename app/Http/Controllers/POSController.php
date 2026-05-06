@@ -111,7 +111,7 @@ class POSController extends Controller
         }
     }
 
-    public function store(Request $request)
+    public function store(Request $request, \App\Services\ReceiptFormatter $receiptFormatter)
     {
         $request->validate([
             'cart'                       => 'required|array',
@@ -134,25 +134,20 @@ class POSController extends Controller
             $todayCount  = Sale::whereDate('created_at', now()->toDateString())->count();
             $invoiceNumber = 'INV-' . $date . '-' . ($todayCount + 1);
 
-            $paymentMethods    = collect($request->payments)->pluck('method')->unique()->toArray();
-            $paymentMethodLabel = count($paymentMethods) > 1 ? 'Multi' : $paymentMethods[0];
-
+            // Determine Payment Status
             $totalCreditAmount = collect($request->payments)->where('method', 'Credit')->sum('amount');
             $totalOtherAmount  = collect($request->payments)->where('method', '!=', 'Credit')->sum('amount');
-
+            
             $paymentStatus = 'paid';
             if ($totalCreditAmount > 0) {
-                if ($totalOtherAmount > 0) {
-                    $paymentStatus = 'partial';
-                } else {
-                    $paymentStatus = 'unpaid';
-                }
+                $paymentStatus = ($totalOtherAmount > 0) ? 'partial' : 'unpaid';
             }
 
+            // Create Sale
             $sale = Sale::create([
                 'invoice_number'   => $invoiceNumber,
-                'total_amount'     => 0,
-                'payment_method'   => $paymentMethodLabel,
+                'total_amount'     => 0, // updated below
+                'payment_method'   => count($request->payments) > 1 ? 'Multi' : $request->payments[0]['method'],
                 'customer_id'      => $request->customer_id,
                 'sale_type'        => $request->sale_type ?? 'retail',
                 'credit_remaining' => $totalCreditAmount,
@@ -162,15 +157,15 @@ class POSController extends Controller
             $totalSaleAmount = 0;
 
             foreach ($request->cart as $item) {
-                $variant          = ProductVariant::with('product')->findOrFail($item['variant_id']);
+                $variant           = ProductVariant::with('product')->findOrFail($item['variant_id']);
                 $quantityRequested = (int) $item['quantity'];
-                $unitPrice        = (int) round($item['unit_price']);
-                $discount         = (int) round($item['discount'] ?? 0);
-                $warehouseId      = $item['warehouse_id'];
+                $unitPrice         = (int) round($item['unit_price']);
+                $discount          = (int) round($item['discount'] ?? 0);
+                $warehouseId       = $item['warehouse_id'];
 
-                $itemSubtotal = (int) round($unitPrice * $quantityRequested);
-                $itemTotal    = $itemSubtotal - $discount;
-                $totalSaleAmount += $itemTotal;
+                $itemSubtotal      = $unitPrice * $quantityRequested;
+                $itemTotal         = $itemSubtotal - $discount;
+                $totalSaleAmount  += $itemTotal;
 
                 $saleItem = SaleItem::create([
                     'sale_id'            => $sale->id,
@@ -178,14 +173,14 @@ class POSController extends Controller
                     'product_variant_id' => $variant->id,
                     'quantity'           => $quantityRequested,
                     'unit_price'         => $unitPrice,
-                    'cost_price'         => 0,
+                    'cost_price'         => 0, // calculated via FIFO
                     'total_cost'         => 0,
                     'subtotal'           => $itemSubtotal,
                     'discount'           => $discount,
                     'total_price'        => $itemTotal,
                 ]);
 
-                // FIFO deduction
+                // FIFO Stock Deduction
                 $batches = StockBatch::where('product_variant_id', $variant->id)
                     ->where('warehouse_id', $warehouseId)
                     ->where('remaining_quantity', '>', 0)
@@ -198,41 +193,35 @@ class POSController extends Controller
 
                 foreach ($batches as $batch) {
                     if ($remainingToDeduct <= 0) break;
-
-                    $take = min((int) $batch->remaining_quantity, (int) $remainingToDeduct);
+                    $take = min((int) $batch->remaining_quantity, $remainingToDeduct);
                     if ($take <= 0) continue;
 
                     $batch->decrement('remaining_quantity', $take);
-
-                    $batchCost = (int) $batch->cost_price;
-                    $totalCostForThisItem += (int) round($batchCost * $take);
+                    $totalCostForThisItem += ($batch->cost_price * $take);
 
                     \App\Models\SaleItemBatch::create([
                         'sale_item_id'   => $saleItem->id,
                         'stock_batch_id' => $batch->id,
                         'quantity'       => $take,
-                        'cost_price'     => $batchCost,
+                        'cost_price'     => $batch->cost_price,
                     ]);
 
                     $remainingToDeduct -= $take;
                 }
 
-                $avgCostPrice = $quantityRequested > 0
-                    ? (int) round($totalCostForThisItem / $quantityRequested)
-                    : 0;
+                if ($remainingToDeduct > 0) {
+                    throw new \Exception("Not enough stock for {$variant->product->name}. Missing: {$remainingToDeduct}");
+                }
 
                 $saleItem->update([
-                    'cost_price' => $avgCostPrice,
+                    'cost_price' => $quantityRequested > 0 ? (int) round($totalCostForThisItem / $quantityRequested) : 0,
                     'total_cost' => $totalCostForThisItem,
                 ]);
-
-                if ($remainingToDeduct > 0) {
-                    throw new \Exception("Not enough stock for {$variant->product->name} – {$variant->name}. Missing: {$remainingToDeduct}");
-                }
             }
 
-            $sale->update(['total_amount' => (int) $totalSaleAmount]);
+            $sale->update(['total_amount' => $totalSaleAmount]);
 
+            // Handle Payments
             foreach ($request->payments as $paymentData) {
                 SalePayment::create([
                     'sale_id'        => $sale->id,
@@ -241,17 +230,28 @@ class POSController extends Controller
                 ]);
 
                 if ($paymentData['method'] === 'Credit' && !empty($request->customer_id)) {
-                    DB::table('customers')
-                        ->where('id', $request->customer_id)
-                        ->update([
-                            'credit_balance' => DB::raw('COALESCE(credit_balance, 0) + ' . (int) $paymentData['amount']),
-                        ]);
+                    DB::table('customers')->where('id', $request->customer_id)
+                        ->increment('credit_balance', (int) $paymentData['amount']);
                 }
             }
 
             DB::commit();
 
-            return response()->json(['success' => true, 'invoice' => $sale->invoice_number]);
+            // Refresh sale to get final timestamps/relations for formatter
+            $sale->refresh();
+
+            return response()->json([
+                'success' => true,
+                'invoice' => $sale->invoice_number,
+                'receipt' => [
+                    'invoiceNumber' => $sale->invoice_number,
+                    'dateTime'      => $sale->created_at->format('d M Y H:i'),
+                    'customerName'  => $sale->customer?->name ?? 'Walk-in Customer',
+                    'total'         => $sale->total_amount,
+                    'formatted_receipt' => $receiptFormatter->format($sale),
+                ],
+                'formatted_receipt' => $receiptFormatter->format($sale),
+            ]);
 
         } catch (\Exception $e) {
             DB::rollBack();

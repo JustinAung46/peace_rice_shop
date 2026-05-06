@@ -1,13 +1,18 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="mb-6 flex justify-between items-center">
+<div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
     <div class="flex items-center">
         <a href="{{ route('reports.index') }}" class="mr-4 text-slate-500 hover:text-slate-700">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
         </a>
         <h1 class="text-2xl font-bold text-slate-800">Sale Items Report</h1>
     </div>
+    
+    <a href="{{ route('reports.items.export', request()->query()) }}" class="inline-flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md text-sm font-semibold">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+        Export CSV
+    </a>
 </div>
 
 <div class="bg-white rounded-2xl shadow-sm border border-slate-100 mb-8 overflow-hidden">
@@ -133,6 +138,25 @@
                 </tr>
                 @endif
             </tbody>
+            @if($items->isNotEmpty())
+            <tfoot class="bg-slate-50 border-t-2 border-slate-200 font-bold">
+                <tr>
+                    <td colspan="3" class="px-6 py-4 text-right text-slate-700 uppercase tracking-wider text-xs">Total for All Pages</td>
+                    <td class="px-6 py-4 text-center text-slate-800">{{ number_format($summary['total_quantity']) }}</td>
+                    <td class="px-6 py-4 text-right text-slate-800">{{ number_format($summary['total_revenue']) }} K</td>
+                    <td class="px-6 py-4 text-right text-slate-500">{{ number_format($summary['total_cost']) }} K</td>
+                    <td class="px-6 py-4 text-right text-slate-600">
+                        @php
+                            $overallMargin = $summary['total_revenue'] > 0 ? ($summary['total_profit'] / $summary['total_revenue']) * 100 : 0;
+                        @endphp
+                        {{ number_format($overallMargin, 1) }}%
+                    </td>
+                    <td class="px-6 py-4 text-right {{ $summary['total_profit'] >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">
+                        {{ number_format($summary['total_profit']) }} K
+                    </td>
+                </tr>
+            </tfoot>
+            @endif
         </table>
     </div>
     @if($items->hasPages())

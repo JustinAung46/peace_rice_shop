@@ -137,10 +137,63 @@
             @endcan
 
             @can('admin')
+            <li class="mt-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Purchase Orders</li>
+
+            {{-- Collapsible Purchase Orders group --}}
+            @php
+                $poActive = request()->routeIs('purchase-orders.*') || request()->routeIs('suppliers.*');
+                $pendingPo = \App\Models\PurchaseOrder::where('receive_status','!=','received')->count();
+            @endphp
+            <li>
+                <button id="po-menu-btn" onclick="togglePoMenu()"
+                    class="w-full group flex items-center px-4 py-3.5 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors {{ $poActive ? 'bg-slate-800 text-white' : '' }}">
+                    <svg class="w-6 h-6 mr-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                    <span class="text-base font-medium flex-1 text-left">Purchase Orders</span>
+                    @if($pendingPo > 0)
+                    <span class="mr-2 bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $pendingPo }}</span>
+                    @endif
+                    <svg id="po-chevron" class="w-4 h-4 transition-transform {{ $poActive ? 'rotate-90' : '' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+
+                <ul id="po-submenu" class="mt-1 ml-4 space-y-1 {{ $poActive ? '' : 'hidden' }}">
+                    <li>
+                        <a href="{{ route('purchase-orders.index') }}"
+                           class="flex items-center px-4 py-2.5 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm {{ request()->routeIs('purchase-orders.*') ? 'bg-slate-800 text-white' : '' }}">
+                            <svg class="w-4 h-4 mr-2 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            All Orders
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('purchase-orders.create') }}"
+                           class="flex items-center px-4 py-2.5 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm">
+                            <svg class="w-4 h-4 mr-2 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            New Order
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('suppliers.index') }}"
+                           class="flex items-center px-4 py-2.5 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm {{ request()->routeIs('suppliers.*') ? 'bg-slate-800 text-white' : '' }}">
+                            <svg class="w-4 h-4 mr-2 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                            Suppliers
+                        </a>
+                    </li>
+                </ul>
+            </li>
+
             <li class="mt-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Administration</li>
             <li>
                 <a href="{{ route('accounts.index') }}" class="group flex items-center px-4 py-3.5 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors {{ request()->routeIs('accounts.*') ? 'bg-slate-800 text-white' : '' }}">
-                    <svg class="w-6 h-6 mr-3 shrink-0" fill="none" viewBox="0 24 24 24" stroke="currentColor">
+                    <svg class="w-6 h-6 mr-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
                     <span class="text-base font-medium">Accounts</span>

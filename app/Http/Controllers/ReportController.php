@@ -64,30 +64,132 @@ class ReportController extends Controller
         $categoryId = $request->input('category_id');
 
         $query = SaleItem::with(['product', 'product.category', 'variant'])
-            ->selectRaw('product_id, product_variant_id, SUM(quantity) as total_quantity, SUM(total_price) as total_revenue, SUM(total_cost) as total_cost')
+            ->selectRaw('sale_items.product_id, sale_items.product_variant_id, SUM(sale_items.quantity) as total_quantity, SUM(sale_items.total_price) as total_revenue, SUM(sale_items.total_cost) as total_cost')
+            ->join('products', 'sale_items.product_id', '=', 'products.id')
+            ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
+            ->leftJoin('product_variants', 'sale_items.product_variant_id', '=', 'product_variants.id')
             ->whereHas('sale', function($q) {
                 $q->where('status', '!=', 'cancelled');
             })
-            ->whereDate('created_at', '>=', $startDate)
-            ->whereDate('created_at', '<=', $endDate)
-            ->groupBy('product_id', 'product_variant_id');
+            ->whereDate('sale_items.created_at', '>=', $startDate)
+            ->whereDate('sale_items.created_at', '<=', $endDate)
+            ->groupBy('sale_items.product_id', 'sale_items.product_variant_id', 'categories.name', 'products.name', 'product_variants.name');
 
         if ($productId) {
-            $query->where('product_id', $productId);
+            $query->where('sale_items.product_id', $productId);
         }
 
         if ($categoryId) {
-            $query->whereHas('product', function ($q) use ($categoryId) {
-                $q->where('category_id', $categoryId);
-            });
+            $query->where('products.category_id', $categoryId);
         }
 
-        $items = $query->orderByDesc('total_revenue')->paginate(50)->withQueryString();
+        $allItemTotals = (clone $query)->get();
+        $summary = [
+            'total_quantity' => $allItemTotals->sum('total_quantity'),
+            'total_revenue' => $allItemTotals->sum('total_revenue'),
+            'total_cost' => $allItemTotals->sum('total_cost'),
+            'total_profit' => $allItemTotals->sum('total_revenue') - $allItemTotals->sum('total_cost'),
+        ];
+
+        $items = $query->orderBy('categories.name')
+            ->orderBy('products.name')
+            ->orderBy('product_variants.name')
+            ->paginate(50)->withQueryString();
 
         $products = \App\Models\Product::withActiveCategory()->orderBy('name')->get();
         $categories = \App\Models\Category::active()->orderBy('name')->get();
 
-        return view('reports.items', compact('items', 'products', 'categories', 'startDate', 'endDate'));
+        return view('reports.items', compact('items', 'products', 'categories', 'startDate', 'endDate', 'summary'));
+    }
+
+    public function exportSaleItems(Request $request)
+    {
+        $startDate = $request->input('start_date', Carbon::today()->toDateString());
+        $endDate = $request->input('end_date', Carbon::today()->toDateString());
+        $productId = $request->input('product_id');
+        $categoryId = $request->input('category_id');
+
+        $query = SaleItem::with(['product', 'product.category', 'variant'])
+            ->selectRaw('sale_items.product_id, sale_items.product_variant_id, SUM(sale_items.quantity) as total_quantity, SUM(sale_items.total_price) as total_revenue, SUM(sale_items.total_cost) as total_cost')
+            ->join('products', 'sale_items.product_id', '=', 'products.id')
+            ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
+            ->leftJoin('product_variants', 'sale_items.product_variant_id', '=', 'product_variants.id')
+            ->whereHas('sale', function($q) {
+                $q->where('status', '!=', 'cancelled');
+            })
+            ->whereDate('sale_items.created_at', '>=', $startDate)
+            ->whereDate('sale_items.created_at', '<=', $endDate)
+            ->groupBy('sale_items.product_id', 'sale_items.product_variant_id', 'categories.name', 'products.name', 'product_variants.name');
+
+        if ($productId) {
+            $query->where('sale_items.product_id', $productId);
+        }
+
+        if ($categoryId) {
+            $query->where('products.category_id', $categoryId);
+        }
+
+        $items = $query->orderBy('categories.name')
+            ->orderBy('products.name')
+            ->orderBy('product_variants.name')
+            ->get();
+
+        $headers = [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=sale_items_report_{$startDate}_{$endDate}.csv",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $callback = function() use($items) {
+            $file = fopen('php://output', 'w');
+            // Adding UTF-8 BOM for Excel compatibility
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($file, ['Product', 'Variant', 'Category', 'Total Qty Sold', 'Total Revenue', 'Total Cost', 'Total Profit', 'Margin %']);
+
+            $sumQuantity = 0;
+            $sumRevenue = 0;
+            $sumCost = 0;
+
+            foreach ($items as $item) {
+                $profit = $item->total_revenue - $item->total_cost;
+                $margin = $item->total_revenue > 0 ? ($profit / $item->total_revenue) * 100 : 0;
+                
+                $sumQuantity += $item->total_quantity;
+                $sumRevenue += $item->total_revenue;
+                $sumCost += $item->total_cost;
+                
+                fputcsv($file, [
+                    $item->product->name,
+                    $item->variant ? $item->variant->name : '',
+                    $item->product->category ? $item->product->category->name : 'No Category',
+                    $item->total_quantity,
+                    $item->total_revenue,
+                    $item->total_cost,
+                    $profit,
+                    round($margin, 1) . '%'
+                ]);
+            }
+
+            $sumProfit = $sumRevenue - $sumCost;
+            $sumMargin = $sumRevenue > 0 ? ($sumProfit / $sumRevenue) * 100 : 0;
+            
+            fputcsv($file, [
+                'TOTAL',
+                '',
+                '',
+                $sumQuantity,
+                $sumRevenue,
+                $sumCost,
+                $sumProfit,
+                round($sumMargin, 1) . '%'
+            ]);
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     public function receipts(Request $request)

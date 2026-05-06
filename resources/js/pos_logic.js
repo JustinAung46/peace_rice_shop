@@ -2,6 +2,9 @@
  * POS Logic
  */
 
+// Load the print module (receipt generation & Android bridge).
+import './pos_print.js';
+
 let cart = {};
 let payments = []; // Array of {method, amount}
 let currentEditingPayment = null; // {index, method} or null
@@ -199,16 +202,22 @@ function pickerSelectVariant(variantId) {
 
     const breakdownEl = document.getElementById('picker-warehouse-breakdown');
     if (v.stock_batches && v.stock_batches.length > 0) {
-        const breakdown = {};
+        // Group by warehouse_id so we can sort numerically
+        const breakdownById = {};
         v.stock_batches.forEach(batch => {
+            const wId   = batch.warehouse ? batch.warehouse.id : 0;
             const wName = batch.warehouse ? batch.warehouse.name : 'Unknown';
-            breakdown[wName] = (breakdown[wName] || 0) + parseInt(batch.remaining_quantity);
+            if (!breakdownById[wId]) breakdownById[wId] = { name: wName, qty: 0 };
+            breakdownById[wId].qty += parseInt(batch.remaining_quantity);
         });
-        
-        const breakdownStr = Object.entries(breakdown)
-            .map(([name, qty]) => `${qty} in ${name}`)
-            .join(', ');
-        
+
+        // Sort ascending by warehouse id, then build display string
+        const breakdownStr = Object.keys(breakdownById)
+            .map(Number)
+            .sort((a, b) => a - b)
+            .map(wId => `${breakdownById[wId].qty} in ${breakdownById[wId].name}`)
+            .join(' · ');
+
         breakdownEl.innerText = breakdownStr;
         breakdownEl.classList.remove('hidden');
     } else {
@@ -626,18 +635,13 @@ async function processCheckout() {
         checkoutBtn.innerText = 'Processing...';
         const response = await fetch(window.POS_CONFIG.routes.store, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': window.POS_CONFIG.csrf }, body: JSON.stringify(payload) });
         const result = await response.json();
-        if (result.success) { 
-            Swal.fire({ 
-                icon: 'success', 
-                title: 'Sale Successful!', 
-                text: 'Invoice: ' + result.invoice,
-                timer: 3000,
-                timerProgressBar: true,
-                showConfirmButton: true
-            }).then(() => { 
-                cart = {}; 
-                window.location.reload(); 
-            }); 
+        if (result.success) {
+            // Delegate all receipt building and print dialog to pos_print.js.
+            window.handlePrint(result, () => {
+                cart = {}; payments = [];
+                renderCart(); renderPayments();
+                window.location.reload();
+            });
         }
         else alert('Error: ' + result.message);
     } catch (error) { alert('System Error: ' + error.message); } finally { checkoutBtn.disabled = false; checkoutBtn.innerText = 'Checkout'; }

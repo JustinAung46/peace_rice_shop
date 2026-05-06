@@ -95,6 +95,16 @@
                 document.getElementById('main-content').classList.add('page-loaded');
             }, 10);
         });
+
+        // Purchase Orders sidebar submenu toggle
+        function togglePoMenu() {
+            const submenu = document.getElementById('po-submenu');
+            const chevron = document.getElementById('po-chevron');
+            if (submenu) {
+                submenu.classList.toggle('hidden');
+                chevron && chevron.classList.toggle('rotate-90');
+            }
+        }
     </script>
 </body>
 </html>
