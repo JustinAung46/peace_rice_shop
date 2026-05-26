@@ -63,7 +63,7 @@ Route::middleware(['auth'])->group(function () {
 
         // Purchase Orders
         Route::resource('purchase-orders', App\Http\Controllers\PurchaseOrderController::class)
-            ->except(['edit', 'update']);
+            ->except([]);
         Route::get('purchase-orders/{purchaseOrder}/receive',
             [App\Http\Controllers\PurchaseOrderController::class, 'createReceipt'])
             ->name('purchase-orders.receive');

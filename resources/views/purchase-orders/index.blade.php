@@ -134,10 +134,18 @@
                         </span>
                     </td>
                     <td class="px-5 py-4 text-right">
-                        <a href="{{ route('purchase-orders.show', $order) }}"
-                           class="text-indigo-600 hover:text-indigo-800 font-semibold text-xs border border-indigo-200 rounded-lg px-3 py-1.5 hover:border-indigo-400 transition-colors">
-                            View
-                        </a>
+                        <div class="inline-flex items-center gap-2">
+                            @if($order->receive_status === 'pending')
+                            <a href="{{ route('purchase-orders.edit', $order) }}"
+                               class="text-amber-600 hover:text-amber-800 font-semibold text-xs border border-amber-200 rounded-lg px-3 py-1.5 hover:border-amber-400 transition-colors">
+                                Edit
+                            </a>
+                            @endif
+                            <a href="{{ route('purchase-orders.show', $order) }}"
+                               class="text-indigo-600 hover:text-indigo-800 font-semibold text-xs border border-indigo-200 rounded-lg px-3 py-1.5 hover:border-indigo-400 transition-colors">
+                                View
+                            </a>
+                        </div>
                     </td>
                 </tr>
                 @endforeach

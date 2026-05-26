@@ -17,6 +17,12 @@
         </div>
     </div>
 
+    {{-- Info banner --}}
+    <div class="bg-indigo-50 border border-indigo-200 rounded-xl px-5 py-3 text-sm text-indigo-700 flex items-center gap-3">
+        <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span>Check only the items you are receiving now. Unchecked items will be skipped and can be received later.</span>
+    </div>
+
     <form method="POST" action="{{ route('purchase-orders.receive.store', $purchaseOrder) }}" id="receive-form" class="space-y-6">
         @csrf
 
@@ -41,13 +47,26 @@
         <div class="space-y-4">
             @foreach($pendingItems as $loopIdx => $item)
             <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden" id="item-card-{{ $item->id }}">
-                {{-- Item Header --}}
+
+                {{-- Item Header with toggle checkbox --}}
                 <div class="flex items-center justify-between px-5 py-4 bg-slate-50 border-b border-slate-200">
-                    <div>
-                        <span class="font-semibold text-slate-800">{{ $item->product->name }}</span>
-                        @if($item->variant)
-                        <span class="ml-2 text-slate-500 text-sm">({{ $item->variant->name }})</span>
-                        @endif
+                    <div class="flex items-center gap-3">
+                        {{-- Toggle checkbox --}}
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox"
+                                   id="include-{{ $item->id }}"
+                                   class="sr-only peer item-toggle"
+                                   data-item="{{ $item->id }}"
+                                   onchange="toggleItem({{ $item->id }})">
+                            <div class="w-10 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-400 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                        <div>
+                            <span class="font-semibold text-slate-800">{{ $item->product->name }}</span>
+                            @if($item->variant)
+                            <span class="ml-2 text-slate-500 text-sm">({{ $item->variant->name }})</span>
+                            @endif
+                            <span class="ml-3 text-xs text-slate-400 font-medium">Toggle to receive this item</span>
+                        </div>
                     </div>
                     <div class="flex items-center gap-4 text-sm">
                         <span class="text-slate-500">Ordered: <strong>{{ number_format($item->quantity_ordered) }}</strong></span>
@@ -56,21 +75,24 @@
                     </div>
                 </div>
 
-                <div class="px-5 py-4 space-y-4">
-                    <input type="hidden" name="items[{{ $loopIdx }}][order_item_id]" value="{{ $item->id }}">
+                {{-- Item Body (collapsed by default) --}}
+                <div id="item-body-{{ $item->id }}" class="hidden px-5 py-4 space-y-4">
+                    <input type="hidden" name="items[{{ $loopIdx }}][order_item_id]" value="{{ $item->id }}" id="hidden-item-id-{{ $item->id }}" disabled>
 
-                    {{-- How many arrived for this item --}}
+                    {{-- Quantity arrived --}}
                     <div class="flex items-end gap-4">
                         <div class="flex-1 max-w-xs">
                             <label class="block text-sm font-medium text-slate-700 mb-1.5">
-                                Total Quantity Arrived <span class="text-red-500">*</span>
+                                Total Quantity Arriving <span class="text-red-500">*</span>
                             </label>
                             <input type="number"
                                    id="arrived-{{ $item->id }}"
+                                   name="items[{{ $loopIdx }}][arrived_display]"
                                    min="1" max="{{ $item->quantity_remaining }}"
                                    placeholder="Max: {{ $item->quantity_remaining }}"
                                    oninput="updateArrivedTotal({{ $item->id }}, {{ $item->quantity_remaining }})"
-                                   class="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-lg font-semibold">
+                                   class="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-lg font-semibold"
+                                   disabled>
                             <p class="text-xs text-slate-400 mt-1">Max: {{ number_format($item->quantity_remaining) }} units</p>
                         </div>
                         <div id="arrived-status-{{ $item->id }}" class="text-sm text-slate-400 pb-2"></div>
@@ -89,8 +111,9 @@
                         <div id="wh-rows-{{ $item->id }}" class="space-y-2">
                             {{-- Initial warehouse row --}}
                             <div class="wh-row flex items-center gap-3" data-item="{{ $item->id }}">
-                                <select name="items[{{ $loopIdx }}][warehouses][0][warehouse_id]" required
-                                        class="flex-1 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <select name="items[{{ $loopIdx }}][warehouses][0][warehouse_id]"
+                                        class="flex-1 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                        disabled>
                                     <option value="">Select warehouse...</option>
                                     @foreach($warehouses as $wh)
                                     <option value="{{ $wh->id }}">{{ $wh->name }}</option>
@@ -99,8 +122,9 @@
                                 <input type="number" name="items[{{ $loopIdx }}][warehouses][0][quantity]"
                                        min="1" placeholder="Qty"
                                        oninput="checkWarehouseSum({{ $item->id }})"
-                                       class="w-28 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 wh-qty-input" required>
-                                <span class="w-8"></span>{{-- spacer for delete btn alignment --}}
+                                       class="w-28 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 wh-qty-input"
+                                       disabled>
+                                <span class="w-8"></span>
                             </div>
                         </div>
 
@@ -116,7 +140,7 @@
         <div class="flex gap-3">
             <button type="submit" id="submit-btn"
                     class="bg-green-600 hover:bg-green-700 text-white font-semibold px-8 py-3 rounded-xl shadow transition-colors">
-                Confirm Receipt & Update Stock
+                Confirm Receipt &amp; Update Stock
             </button>
             <a href="{{ route('purchase-orders.show', $purchaseOrder) }}"
                class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-8 py-3 rounded-xl transition-colors">
@@ -131,9 +155,38 @@ const WAREHOUSES = @json($warehouses->map(fn($w) => ['id' => $w->id, 'name' => $
 
 // Tracks warehouse row counters per item
 const whCounters = {};
-// Tracks loop index per item id
 const itemLoopIdx = @json($pendingItems->values()->mapWithKeys(fn($item, $i) => [$item->id => $i])->toArray());
 
+// ---------- Toggle include/exclude an item ----------
+function toggleItem(itemId) {
+    const checkbox   = document.getElementById(`include-${itemId}`);
+    const body       = document.getElementById(`item-body-${itemId}`);
+    const hiddenId   = document.getElementById(`hidden-item-id-${itemId}`);
+    const arrivedInp = document.getElementById(`arrived-${itemId}`);
+    const card       = document.getElementById(`item-card-${itemId}`);
+
+    const enabled = checkbox.checked;
+
+    // Show/hide the body
+    body.classList.toggle('hidden', !enabled);
+    card.classList.toggle('border-indigo-400', enabled);
+    card.classList.toggle('border-slate-200', !enabled);
+
+    // Enable/disable all inputs inside the body so they're submitted only when included
+    body.querySelectorAll('input, select').forEach(el => {
+        el.disabled = !enabled;
+    });
+    if (hiddenId) hiddenId.disabled = !enabled;
+
+    // Reset when toggled off
+    if (!enabled) {
+        arrivedInp.value = '';
+        document.getElementById(`wh-feedback-${itemId}`).classList.add('hidden');
+        document.getElementById(`arrived-status-${itemId}`).textContent = '';
+    }
+}
+
+// ---------- Warehouse rows ----------
 function addWarehouseRow(itemId, loopIdx) {
     if (!whCounters[itemId]) whCounters[itemId] = 1;
     const idx = whCounters[itemId]++;
@@ -146,7 +199,7 @@ function addWarehouseRow(itemId, loopIdx) {
     const whOptions = WAREHOUSES.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
 
     div.innerHTML = `
-        <select name="items[${loopIdx}][warehouses][${idx}][warehouse_id]" required
+        <select name="items[${loopIdx}][warehouses][${idx}][warehouse_id]"
                 class="flex-1 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
             <option value="">Select warehouse...</option>
             ${whOptions}
@@ -154,7 +207,7 @@ function addWarehouseRow(itemId, loopIdx) {
         <input type="number" name="items[${loopIdx}][warehouses][${idx}][quantity]"
                min="1" placeholder="Qty"
                oninput="checkWarehouseSum(${itemId})"
-               class="w-28 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 wh-qty-input" required>
+               class="w-28 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 wh-qty-input">
         <button type="button" onclick="removeWhRow(this, ${itemId})"
                 class="w-8 text-red-400 hover:text-red-600 transition-colors">
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -183,7 +236,7 @@ function checkWarehouseSum(itemId) {
     rows.forEach(input => { sum += parseInt(input.value || 0); });
 
     const feedback = document.getElementById(`wh-feedback-${itemId}`);
-    const status = document.getElementById(`arrived-status-${itemId}`);
+    const status   = document.getElementById(`arrived-status-${itemId}`);
 
     if (arrived > 0) {
         if (sum === arrived) {
@@ -205,13 +258,26 @@ function checkWarehouseSum(itemId) {
     }
 }
 
-// Validate form before submit
+// ---------- Form submit validation ----------
 document.getElementById('receive-form').addEventListener('submit', function(e) {
-    const itemCards = document.querySelectorAll('[id^="item-card-"]');
+    // Collect only checked items
+    const checkedToggles = document.querySelectorAll('.item-toggle:checked');
+
+    if (checkedToggles.length === 0) {
+        e.preventDefault();
+        Swal.fire({
+            icon: 'warning',
+            title: 'No Items Selected',
+            text: 'Please toggle on at least one item to receive.',
+            confirmButtonColor: '#4f46e5',
+        });
+        return;
+    }
+
     let valid = true;
 
-    itemCards.forEach(card => {
-        const itemId = card.id.replace('item-card-', '');
+    checkedToggles.forEach(toggle => {
+        const itemId = toggle.dataset.item;
         const arrivedInput = document.getElementById(`arrived-${itemId}`);
         const arrived = parseInt(arrivedInput?.value || 0);
 
@@ -221,6 +287,9 @@ document.getElementById('receive-form').addEventListener('submit', function(e) {
             return;
         }
 
+        arrivedInput.classList.remove('border-red-400');
+
+        const card = document.getElementById(`item-card-${itemId}`);
         const rows = card.querySelectorAll('.wh-qty-input');
         let sum = 0;
         rows.forEach(input => { sum += parseInt(input.value || 0); });

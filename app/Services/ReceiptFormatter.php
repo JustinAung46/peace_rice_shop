@@ -34,7 +34,7 @@ class ReceiptFormatter
             'size' => 44.0,
             'bold' => true,
             'center' => true,
-            'spaceBefore' => 10,
+            'spaceBefore' => 1,
             'spaceAfter' => 5
         ];
 
@@ -72,33 +72,20 @@ class ReceiptFormatter
         */
 
         $segments[] = [
-            'left' => 'Invoice No',
-            'right' => $sale->invoice_number,
+            'left' => $sale->invoice_number,
+            'right' => $sale->created_at->format('d/m/Y'),
             'size' => 22.0,
             'spaceBefore' => 5
         ];
 
-        $segments[] = [
-            'left' => 'Date',
-            'right' => $sale->created_at->format('d/m/Y'),
-            'size' => 22.0
-        ];
-
-        $segments[] = [
-            'left' => 'Time',
-            'right' => $sale->created_at->format('h:i A'),
-            'size' => 22.0
-        ];
-
         $customerName = $sale->customer
             ? $sale->customer->name
-            : 'Walk-in Customer';
+            : 'Walk-in';
 
         $segments[] = [
-            'left' => 'Customer',
-            'right' => $customerName,
-            'size' => 22.0,
-            'spaceAfter' => 5
+            'left' => $customerName,
+            'right' => $sale->created_at->format('h:i A'),
+            'size' => 22.0
         ];
 
         $segments[] = [
@@ -145,7 +132,7 @@ class ReceiptFormatter
             // Qty x Unit Price
             $segments[] = [
                 'left' => '  ' . $item->quantity . ' x ' . number_format($item->unit_price),
-                'right' => number_format($item->unit_price) . ' MMK',
+                'right' => number_format($item->quantity * $item->unit_price) . ' MMK',
                 'size' => 23.0,
                 'spaceAfter' => 2
             ];
@@ -242,7 +229,7 @@ class ReceiptFormatter
             'left' => 'Powered by Peace POS',
             'center' => true,
             'size' => 18.0,
-            'spaceAfter' => 50
+            'spaceAfter' => 30
         ];
 
         return $segments;

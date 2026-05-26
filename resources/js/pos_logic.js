@@ -373,7 +373,31 @@ function updateQty(key, change) {
 }
 
 function clearCart() {
-    if(confirm('Clear cart?')) { cart = {}; payments = []; renderCart(); renderPayments(); }
+    Swal.fire({
+        icon: 'warning',
+        title: 'Clear Cart?',
+        text: 'All items and payments will be removed.',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, clear it',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+    }).then((result) => {
+        if (result.isConfirmed) {
+            cart = {};
+            payments = [];
+            renderCart();
+            renderPayments();
+            Swal.fire({
+                icon: 'success',
+                title: 'Cart Cleared',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 1500,
+            });
+        }
+    });
 }
 
 // --- Edit Modal Logic ---

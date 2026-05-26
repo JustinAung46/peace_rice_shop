@@ -393,77 +393,122 @@ class InventoryController extends Controller
     public function processTransform(Request $request)
     {
         $validated = $request->validate([
-            'warehouse_id'        => 'required|exists:warehouses,id',
-            'original_variant_id' => 'required|exists:product_variants,id',
-            'target_variant_id'   => 'required|exists:product_variants,id|different:original_variant_id',
-            'quantity'            => 'required|integer|min:1',
+            'warehouse_id' => 'required|exists:warehouses,id',
+            'transforms'   => 'required|string',
         ]);
 
-        $originalVariant = ProductVariant::findOrFail($validated['original_variant_id']);
-        $targetVariant   = ProductVariant::findOrFail($validated['target_variant_id']);
+        $transforms = json_decode($validated['transforms'], true);
 
-        if (!$originalVariant->pyi_per_bag || !$targetVariant->pyi_per_bag) {
-            return back()->with('error', 'Both variants must have "Pyi per Bag" set.')->withInput();
+        if (!is_array($transforms) || empty($transforms)) {
+            return back()->with('error', 'No valid transformation items provided.');
         }
 
-        $totalOriginalStock = StockBatch::where('product_variant_id', $originalVariant->id)
-            ->where('warehouse_id', $validated['warehouse_id'])
-            ->sum('remaining_quantity');
+        $validator = \Illuminate\Support\Facades\Validator::make(['items' => $transforms], [
+            'items.*.source_variant_id' => 'required|exists:product_variants,id',
+            'items.*.target_variant_id' => 'required|exists:product_variants,id|different:items.*.source_variant_id',
+            'items.*.quantity'          => 'required|integer|min:1',
+        ]);
 
-        if ($totalOriginalStock < $validated['quantity']) {
-            return back()->with('error', 'Not enough stock for the original variant in the selected warehouse.')->withInput();
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
         }
 
-        $quantityToDeduct          = $validated['quantity'];
-        $targetQtyPerOriginalBag   = $originalVariant->pyi_per_bag / $targetVariant->pyi_per_bag;
+        $warehouseId = $request->input('warehouse_id');
+        $rows = $transforms;
 
-        DB::transaction(function () use ($validated, $originalVariant, $targetVariant, $quantityToDeduct, $targetQtyPerOriginalBag) {
-            $batches = StockBatch::where('product_variant_id', $originalVariant->id)
-                ->where('warehouse_id', $validated['warehouse_id'])
-                ->where('remaining_quantity', '>', 0)
-                ->orderBy('purchase_date', 'asc')
-                ->orderBy('id', 'asc')
-                ->get();
+        $originalVariantIds = collect($rows)->pluck('source_variant_id')->unique()->filter()->values()->all();
+        $targetVariantIds = collect($rows)->pluck('target_variant_id')->unique()->filter()->values()->all();
+        $variantIds = array_values(array_unique(array_merge($originalVariantIds, $targetVariantIds)));
 
-            $remainingToDeduct = $quantityToDeduct;
+        $variants = ProductVariant::whereIn('id', $variantIds)->get()->keyBy('id');
 
-            foreach ($batches as $batch) {
-                if ($remainingToDeduct <= 0) break;
+        $totalRequested = [];
+        foreach ($rows as $index => $row) {
+            $original = $variants->get($row['source_variant_id']);
+            $target = $variants->get($row['target_variant_id']);
 
-                $deductAmount = min($batch->remaining_quantity, $remainingToDeduct);
-                $batch->remaining_quantity -= $deductAmount;
-                $batch->save();
-
-                $remainingToDeduct -= $deductAmount;
-
-                $targetQty  = $deductAmount * $targetQtyPerOriginalBag;
-                $targetCost = $batch->cost_price / $targetQtyPerOriginalBag;
-
-                StockBatch::create([
-                    'product_id'         => $targetVariant->product_id,
-                    'product_variant_id' => $targetVariant->id,
-                    'warehouse_id'       => $validated['warehouse_id'],
-                    'original_quantity'  => $targetQty,
-                    'remaining_quantity' => $targetQty,
-                    'cost_price'         => (int) round($targetCost),
-                    'purchase_date'      => now(),
-                    'batch_code'         => ($batch->batch_code ? $batch->batch_code . '-TR' : 'TR-' . time()),
-                ]);
+            if (!$original || !$target) {
+                return back()->with('error', "Item " . ($index + 1) . ": invalid variant selection.")->withInput();
             }
 
-            StockMovement::create([
-                'type'              => 'bag_transformation',
-                'product_id'        => $originalVariant->product_id,
-                'product_variant_id'=> $originalVariant->id,
-                'from_warehouse_id' => $validated['warehouse_id'],
-                'to_warehouse_id'   => $validated['warehouse_id'],
-                'target_product_id' => $targetVariant->product_id,
-                'target_variant_id' => $targetVariant->id,
-                'quantity'          => $quantityToDeduct,
-                'user_id'           => auth()->id(),
-            ]);
-        });
+            if (!$original->pyi_per_bag || !$target->pyi_per_bag) {
+                return back()->with('error', "Item " . ($index + 1) . ": both variants must have \"Pyi per Bag\" set.")->withInput();
+            }
 
-        return redirect()->route('inventory.index')->with('success', 'Transformation successful.');
+            $totalRequested[$original->id] = ($totalRequested[$original->id] ?? 0) + $row['quantity'];
+        }
+
+        $availableStock = StockBatch::whereIn('product_variant_id', array_keys($totalRequested))
+            ->where('warehouse_id', $warehouseId)
+            ->groupBy('product_variant_id')
+            ->selectRaw('product_variant_id, SUM(remaining_quantity) as total')
+            ->pluck('total', 'product_variant_id')
+            ->toArray();
+
+        foreach ($totalRequested as $variantId => $quantity) {
+            if (($availableStock[$variantId] ?? 0) < $quantity) {
+                return back()->with('error', 'Not enough stock in the selected warehouse for one or more source variants.')->withInput();
+            }
+        }
+
+        try {
+            DB::transaction(function () use ($rows, $warehouseId, $variants) {
+                foreach ($rows as $row) {
+                    $originalVariant = $variants->get($row['source_variant_id']);
+                    $targetVariant   = $variants->get($row['target_variant_id']);
+                    $quantityToDeduct = $row['quantity'];
+                    $targetQtyPerOriginalBag = $originalVariant->pyi_per_bag / $targetVariant->pyi_per_bag;
+
+                    $batches = StockBatch::where('product_variant_id', $originalVariant->id)
+                        ->where('warehouse_id', $warehouseId)
+                        ->where('remaining_quantity', '>', 0)
+                        ->orderBy('purchase_date', 'asc')
+                        ->orderBy('id', 'asc')
+                        ->lockForUpdate()
+                        ->get();
+
+                    $remainingToDeduct = $quantityToDeduct;
+                    foreach ($batches as $batch) {
+                        if ($remainingToDeduct <= 0) {
+                            break;
+                        }
+
+                        $deductAmount = min($batch->remaining_quantity, $remainingToDeduct);
+                        $batch->decrement('remaining_quantity', $deductAmount);
+                        $remainingToDeduct -= $deductAmount;
+
+                        $targetQty = $deductAmount * $targetQtyPerOriginalBag;
+                        $targetCost = $batch->cost_price / $targetQtyPerOriginalBag;
+
+                        StockBatch::create([
+                            'product_id'         => $targetVariant->product_id,
+                            'product_variant_id' => $targetVariant->id,
+                            'warehouse_id'       => $warehouseId,
+                            'original_quantity'  => $targetQty,
+                            'remaining_quantity' => $targetQty,
+                            'cost_price'         => (int) round($targetCost),
+                            'purchase_date'      => now(),
+                            'batch_code'         => ($batch->batch_code ? $batch->batch_code . '-TR' : 'TR-' . time()),
+                        ]);
+                    }
+
+                    StockMovement::create([
+                        'type'              => 'bag_transformation',
+                        'product_id'        => $originalVariant->product_id,
+                        'product_variant_id'=> $originalVariant->id,
+                        'from_warehouse_id' => $warehouseId,
+                        'to_warehouse_id'   => $warehouseId,
+                        'target_product_id' => $targetVariant->product_id,
+                        'target_variant_id' => $targetVariant->id,
+                        'quantity'          => $quantityToDeduct,
+                        'user_id'           => auth()->id(),
+                    ]);
+                }
+            });
+        } catch (\Exception $e) {
+            return back()->with('error', 'Transformation failed: ' . $e->getMessage())->withInput();
+        }
+
+        return redirect()->route('inventory.index')->with('success', 'Batch transformation successful.');
     }
 }

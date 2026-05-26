@@ -143,6 +143,98 @@ class PurchaseOrderController extends Controller
         return view('purchase-orders.show', compact('purchaseOrder'));
     }
 
+    // ─── Edit ─────────────────────────────────────────────────────────────────
+
+    public function edit(PurchaseOrder $purchaseOrder)
+    {
+        if ($purchaseOrder->receive_status !== 'pending') {
+            return redirect()->route('purchase-orders.show', $purchaseOrder)
+                ->with('error', 'Only pending orders can be edited.');
+        }
+
+        $purchaseOrder->load('items.product', 'items.variant');
+        $suppliers  = Supplier::orderBy('name')->get();
+        $products   = Product::with('variants')->orderBy('name')->get();
+        $warehouses = Warehouse::orderBy('name')->get();
+
+        $productsJson = json_encode(
+            $products->map(fn ($p) => [
+                'id'       => $p->id,
+                'name'     => $p->name,
+                'variants' => $p->variants->map(fn ($v) => [
+                    'id'         => $v->id,
+                    'name'       => $v->name,
+                    'unit_label' => $v->unit_label,
+                ])->values()->toArray(),
+            ])->values()->toArray()
+        );
+
+        $existingItemsJson = json_encode(
+            $purchaseOrder->items->map(fn ($item) => [
+                'product_id'         => $item->product_id,
+                'product_variant_id' => $item->product_variant_id,
+                'quantity_ordered'   => $item->quantity_ordered,
+                'cost_price'         => $item->cost_price,
+            ])->values()->toArray()
+        );
+
+        return view('purchase-orders.edit', compact(
+            'purchaseOrder', 'suppliers', 'products', 'warehouses', 'productsJson', 'existingItemsJson'
+        ));
+    }
+
+    // ─── Update ───────────────────────────────────────────────────────────────
+
+    public function update(Request $request, PurchaseOrder $purchaseOrder)
+    {
+        if ($purchaseOrder->receive_status !== 'pending') {
+            return redirect()->route('purchase-orders.show', $purchaseOrder)
+                ->with('error', 'Only pending orders can be edited.');
+        }
+
+        $validated = $request->validate([
+            'supplier_id'                => 'required|exists:suppliers,id',
+            'order_date'                 => 'required|date',
+            'expected_date'              => 'nullable|date|after_or_equal:order_date',
+            'notes'                      => 'nullable|string|max:1000',
+            'items'                      => 'required|array|min:1',
+            'items.*.product_id'         => 'required|exists:products,id',
+            'items.*.product_variant_id' => 'nullable|exists:product_variants,id',
+            'items.*.quantity_ordered'   => 'required|integer|min:1',
+            'items.*.cost_price'         => 'required|integer|min:0',
+        ]);
+
+        DB::transaction(function () use ($validated, $purchaseOrder) {
+            $totalCost = collect($validated['items'])
+                ->sum(fn($item) => $item['quantity_ordered'] * $item['cost_price']);
+
+            $purchaseOrder->update([
+                'supplier_id'   => $validated['supplier_id'],
+                'order_date'    => $validated['order_date'],
+                'expected_date' => $validated['expected_date'] ?? null,
+                'notes'         => $validated['notes'] ?? null,
+                'total_cost'    => $totalCost,
+            ]);
+
+            // Replace all items
+            $purchaseOrder->items()->delete();
+
+            foreach ($validated['items'] as $item) {
+                PurchaseOrderItem::create([
+                    'purchase_order_id'  => $purchaseOrder->id,
+                    'product_id'         => $item['product_id'],
+                    'product_variant_id' => $item['product_variant_id'] ?: null,
+                    'quantity_ordered'   => $item['quantity_ordered'],
+                    'quantity_received'  => 0,
+                    'cost_price'         => $item['cost_price'],
+                ]);
+            }
+        });
+
+        return redirect()->route('purchase-orders.show', $purchaseOrder)
+            ->with('success', 'Purchase order updated successfully.');
+    }
+
     // ─── Delete ───────────────────────────────────────────────────────────────
 
     public function destroy(PurchaseOrder $purchaseOrder)
