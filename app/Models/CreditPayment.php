@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class CreditPayment extends Model
 {
-    protected $fillable = ['customer_id', 'amount', 'note'];
+    protected $fillable = ['customer_id', 'amount', 'original_amount', 'note', 'updated_by'];
 
     public function customer()
     {
@@ -16,5 +16,10 @@ class CreditPayment extends Model
     public function allocations()
     {
         return $this->hasMany(CreditAllocation::class);
+    }
+
+    public function logs()
+    {
+        return $this->hasMany(CreditPaymentLog::class);
     }
 }

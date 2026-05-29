@@ -263,7 +263,7 @@
 
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{{-- SweetAlert2 is already bundled in app.js (window.Swal) --}}
 <script>
 // Close modal when clicking outside
 document.addEventListener('click', function(e) {

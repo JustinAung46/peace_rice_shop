@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\CreditPayment;
+use App\Models\CreditPaymentLog;
 use App\Models\Sale;
 use App\Models\SalePayment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class CreditController extends Controller
@@ -113,14 +115,18 @@ class CreditController extends Controller
 
         DB::beginTransaction();
         try {
-            $payment = CreditPayment::create($validated);
+            $payment = CreditPayment::create([
+                'customer_id'     => $validated['customer_id'],
+                'amount'          => $validated['amount'],
+                'original_amount' => $validated['amount'], // Store original — never changes
+                'note'            => $validated['note'] ?? null,
+            ]);
 
             $customer->decrement('credit_balance', $validated['amount']);
 
             // FIFO or Specific Allocation Logic
             $remainingPayment = $validated['amount'];
-            
-            // Get sales to allocate to
+
             $query = Sale::where('customer_id', $customer->id)
                 ->where('credit_remaining', '>', 0)
                 ->lockForUpdate();
@@ -138,16 +144,14 @@ class CreditController extends Controller
 
                 $allocationAmount = min($sale->credit_remaining, $remainingPayment);
 
-                // Create the allocation record linking this payment to this sale
                 \App\Models\CreditAllocation::create([
                     'credit_payment_id' => $payment->id,
                     'sale_id'           => $sale->id,
                     'amount'            => $allocationAmount,
                 ]);
 
-                // Update the sale
                 $sale->credit_remaining -= $allocationAmount;
-                
+
                 if ($sale->credit_remaining == 0) {
                     $sale->payment_status = 'paid';
                 }
@@ -157,6 +161,20 @@ class CreditController extends Controller
                 $remainingPayment -= $allocationAmount;
             }
 
+            // Audit log: created
+            CreditPaymentLog::create([
+                'credit_payment_id' => $payment->id,
+                'customer_id'       => $customer->id,
+                'action'            => 'created',
+                'old_amount'        => null,
+                'new_amount'        => $payment->amount,
+                'old_note'          => null,
+                'new_note'          => $payment->note,
+                'performed_by'      => Auth::id(),
+                'ip_address'        => $request->ip(),
+                'created_at'        => now(),
+            ]);
+
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
@@ -165,5 +183,189 @@ class CreditController extends Controller
 
         return redirect()->route('credits.index')
             ->with('success', 'Payment of ' . number_format($validated['amount']) . ' Ks recorded for ' . $customer->name . '.');
+    }
+
+    /**
+     * Update (edit) an existing credit payment — Admin only.
+     */
+    public function updatePayment(Request $request, CreditPayment $payment)
+    {
+        // Authorization handled by can:admin middleware on this route
+        $validated = $request->validate([
+            'amount' => 'required|integer|min:1',
+            'note'   => 'nullable|string|max:500',
+        ]);
+
+        $customer = Customer::findOrFail($payment->customer_id);
+
+        // Max allowed new amount = what the customer actually owes + old payment (since old payment was already deducted)
+        $maxAllowed = $customer->credit_balance + $payment->amount;
+        if ($validated['amount'] > $maxAllowed) {
+            return back()->withErrors(['amount' => 'Amount exceeds the customer\'s outstanding credit. Maximum allowed: ' . number_format($maxAllowed) . ' Ks.'])->withInput();
+        }
+
+        // Snapshot for audit log
+        $oldAmount = $payment->amount;
+        $oldNote   = $payment->note;
+
+        DB::beginTransaction();
+        try {
+            // Step 1: Reverse all existing allocations for this payment
+            $allocations = $payment->allocations()->lockForUpdate()->get();
+
+            foreach ($allocations as $alloc) {
+                $sale = Sale::lockForUpdate()->find($alloc->sale_id);
+                if ($sale) {
+                    $sale->credit_remaining += $alloc->amount;
+                    // Revert payment_status if it was paid
+                    if ($sale->payment_status === 'paid' && $sale->credit_remaining > 0) {
+                        $sale->payment_status = $sale->credit_remaining < $sale->total_amount ? 'partial' : 'unpaid';
+                    }
+                    $sale->save();
+                }
+            }
+
+            // Step 2: Restore the old amount to customer balance
+            $customer->increment('credit_balance', $oldAmount);
+
+            // Step 3: Delete old allocations
+            $payment->allocations()->delete();
+
+            // Step 4: Update the payment record
+            $payment->update([
+                'amount'     => $validated['amount'],
+                'note'       => $validated['note'] ?? null,
+                'updated_by' => Auth::id(),
+            ]);
+
+            // Step 5: Re-apply FIFO allocations with new amount
+            $remainingPayment = $validated['amount'];
+
+            $unpaidSales = Sale::where('customer_id', $customer->id)
+                ->where('credit_remaining', '>', 0)
+                ->orderBy('created_at', 'asc')
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($unpaidSales as $sale) {
+                if ($remainingPayment <= 0) break;
+
+                $allocationAmount = min($sale->credit_remaining, $remainingPayment);
+
+                \App\Models\CreditAllocation::create([
+                    'credit_payment_id' => $payment->id,
+                    'sale_id'           => $sale->id,
+                    'amount'            => $allocationAmount,
+                ]);
+
+                $sale->credit_remaining -= $allocationAmount;
+
+                if ($sale->credit_remaining == 0) {
+                    $sale->payment_status = 'paid';
+                }
+
+                $sale->save();
+
+                $remainingPayment -= $allocationAmount;
+            }
+
+            // Step 6: Deduct new amount from customer balance
+            $customer->decrement('credit_balance', $validated['amount']);
+
+            // Audit log: edited
+            CreditPaymentLog::create([
+                'credit_payment_id' => $payment->id,
+                'customer_id'       => $customer->id,
+                'action'            => 'edited',
+                'old_amount'        => $oldAmount,
+                'new_amount'        => $validated['amount'],
+                'old_note'          => $oldNote,
+                'new_note'          => $validated['note'] ?? null,
+                'performed_by'      => Auth::id(),
+                'ip_address'        => $request->ip(),
+                'created_at'        => now(),
+            ]);
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['amount' => 'Failed to update payment: ' . $e->getMessage()])->withInput();
+        }
+
+        return redirect()->route('credits.history', $customer)
+            ->with('success', 'Payment updated successfully.');
+    }
+
+    /**
+     * Delete a credit payment and restore all balances — Admin only.
+     */
+    public function destroyPayment(Request $request, CreditPayment $payment)
+    {
+        // Authorization handled by can:admin middleware on this route
+        $customer  = Customer::findOrFail($payment->customer_id);
+        $oldAmount = $payment->amount;
+        $oldNote   = $payment->note;
+
+        DB::beginTransaction();
+        try {
+            // Step 1: Reverse all existing allocations
+            $allocations = $payment->allocations()->lockForUpdate()->get();
+
+            foreach ($allocations as $alloc) {
+                $sale = Sale::lockForUpdate()->find($alloc->sale_id);
+                if ($sale) {
+                    $sale->credit_remaining += $alloc->amount;
+                    if ($sale->payment_status === 'paid' && $sale->credit_remaining > 0) {
+                        $sale->payment_status = $sale->credit_remaining < $sale->total_amount ? 'partial' : 'unpaid';
+                    }
+                    $sale->save();
+                }
+            }
+
+            // Step 2: Restore balance to customer
+            $customer->increment('credit_balance', $oldAmount);
+
+            // Step 3: Delete allocations
+            $payment->allocations()->delete();
+
+            // Audit log: deleted (before deleting the payment row itself)
+            CreditPaymentLog::create([
+                'credit_payment_id' => null, // Payment row will be gone
+                'customer_id'       => $customer->id,
+                'action'            => 'deleted',
+                'old_amount'        => $oldAmount,
+                'new_amount'        => null,
+                'old_note'          => $oldNote,
+                'new_note'          => null,
+                'performed_by'      => Auth::id(),
+                'ip_address'        => $request->ip(),
+                'created_at'        => now(),
+            ]);
+
+            // Step 4: Delete the payment itself
+            $payment->delete();
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Failed to delete payment: ' . $e->getMessage()]);
+        }
+
+        return redirect()->route('credits.history', $customer)
+            ->with('success', 'Payment of ' . number_format($oldAmount) . ' Ks has been deleted and the customer\'s balance has been restored.');
+    }
+
+    /**
+     * Show the full audit log for a customer's credit payments — Admin only.
+     */
+    public function auditLog(Customer $customer)
+    {
+        // Authorization handled by can:admin middleware on this route
+        $logs = CreditPaymentLog::with(['performer'])
+            ->where('customer_id', $customer->id)
+            ->orderByDesc('created_at')
+            ->paginate(30);
+
+        return view('credits.audit', compact('customer', 'logs'));
     }
 }

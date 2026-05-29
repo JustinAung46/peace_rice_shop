@@ -58,6 +58,11 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['can:admin'])->group(function () {
         Route::resource('accounts', AccountController::class);
 
+        // Credit Payment: Edit, Delete, Audit Log
+        Route::put('credits/payment/{payment}',    [\App\Http\Controllers\CreditController::class, 'updatePayment'])->name('credits.payment.update');
+        Route::delete('credits/payment/{payment}', [\App\Http\Controllers\CreditController::class, 'destroyPayment'])->name('credits.payment.destroy');
+        Route::get('credits/{customer}/audit',     [\App\Http\Controllers\CreditController::class, 'auditLog'])->name('credits.audit');
+
         // Suppliers
         Route::resource('suppliers', App\Http\Controllers\SupplierController::class);
 
