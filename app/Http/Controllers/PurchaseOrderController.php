@@ -109,6 +109,7 @@ class PurchaseOrderController extends Controller
                 'amount_paid'    => 0,
                 'payment_status' => 'unpaid',
                 'receive_status' => 'pending',
+                'created_by'     => auth()->id(),
             ]);
 
             foreach ($validated['items'] as $item) {
@@ -132,12 +133,14 @@ class PurchaseOrderController extends Controller
     {
         $purchaseOrder->load([
             'supplier',
+            'createdBy',
             'items.product',
             'items.variant',
+            'receipts.receivedBy',
             'receipts.receiptItems.warehouse',
             'receipts.receiptItems.orderItem.product',
             'receipts.receiptItems.orderItem.variant',
-            'payments',
+            'payments.paidBy',
         ]);
 
         return view('purchase-orders.show', compact('purchaseOrder'));
@@ -287,6 +290,7 @@ class PurchaseOrderController extends Controller
                 'purchase_order_id' => $purchaseOrder->id,
                 'received_date'     => $validated['received_date'],
                 'notes'             => $validated['notes'] ?? null,
+                'received_by'       => auth()->id(),
             ]);
 
             foreach ($validated['items'] as $itemData) {
@@ -375,6 +379,7 @@ class PurchaseOrderController extends Controller
                 'amount'            => $validated['amount'],
                 'payment_date'      => $validated['payment_date'],
                 'note'              => $validated['note'] ?? null,
+                'paid_by'           => auth()->id(),
             ]);
 
             $purchaseOrder->increment('amount_paid', $validated['amount']);

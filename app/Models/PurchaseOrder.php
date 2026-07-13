@@ -9,6 +9,7 @@ class PurchaseOrder extends Model
     protected $fillable = [
         'supplier_id', 'order_number', 'order_date', 'expected_date',
         'notes', 'total_cost', 'amount_paid', 'payment_status', 'receive_status',
+        'created_by',
     ];
 
     protected $casts = [
@@ -19,6 +20,11 @@ class PurchaseOrder extends Model
     public function supplier()
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function items()
