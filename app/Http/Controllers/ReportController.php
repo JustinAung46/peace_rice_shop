@@ -14,9 +14,12 @@ class ReportController extends Controller
         $today = Carbon::today();
 
         // Calculate stats manually since profit column is removed
-        $todaysItems = SaleItem::whereHas('sale', function($q) {
-            $q->where('status', '!=', 'cancelled');
-        })->whereDate('created_at', $today)->get();
+        // Use a JOIN instead of whereHas to avoid correlated subqueries
+        $todaysItems = SaleItem::join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->where('sales.status', '!=', 'cancelled')
+            ->whereDate('sale_items.created_at', $today)
+            ->select('sale_items.*')
+            ->get();
         
         $totalRevenue = $todaysItems->sum('total_price');
         $totalCost = $todaysItems->sum('total_cost');
@@ -35,15 +38,14 @@ class ReportController extends Controller
         $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
         $endDate = $request->input('end_date', Carbon::now()->toDateString());
 
-        $dailyStats = SaleItem::selectRaw('DATE(created_at) as date, 
-                                        COUNT(DISTINCT sale_id) as transaction_count, 
-                                        SUM(total_price) as revenue,
-                                        SUM(total_cost) as total_cost')
-            ->whereHas('sale', function($q) {
-                $q->where('status', '!=', 'cancelled');
-            })
-            ->whereDate('created_at', '>=', $startDate)
-            ->whereDate('created_at', '<=', $endDate)
+        $dailyStats = SaleItem::join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->where('sales.status', '!=', 'cancelled')
+            ->whereDate('sale_items.created_at', '>=', $startDate)
+            ->whereDate('sale_items.created_at', '<=', $endDate)
+            ->selectRaw('DATE(sale_items.created_at) as date,
+                         COUNT(DISTINCT sale_items.sale_id) as transaction_count,
+                         SUM(sale_items.total_price) as revenue,
+                         SUM(sale_items.total_cost) as total_cost')
             ->groupBy('date')
             ->orderBy('date', 'desc')
             ->get();
@@ -58,8 +60,13 @@ class ReportController extends Controller
 
     public function saleItemsReport(Request $request)
     {
-        $startDate = $request->input('start_date', Carbon::today()->toDateString());
-        $endDate = $request->input('end_date', Carbon::today()->toDateString());
+        $startDate = Carbon::parse(
+            $request->input('start_date', Carbon::today())
+        )->startOfDay();
+
+        $endDate = Carbon::parse(
+            $request->input('end_date', Carbon::today())
+        )->endOfDay();
         $productId = $request->input('product_id');
         $categoryId = $request->input('category_id');
 
@@ -68,11 +75,9 @@ class ReportController extends Controller
             ->join('products', 'sale_items.product_id', '=', 'products.id')
             ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
             ->leftJoin('product_variants', 'sale_items.product_variant_id', '=', 'product_variants.id')
-            ->whereHas('sale', function($q) {
-                $q->where('status', '!=', 'cancelled');
-            })
-            ->whereDate('sale_items.created_at', '>=', $startDate)
-            ->whereDate('sale_items.created_at', '<=', $endDate)
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->where('sales.status', '!=', 'cancelled')
+            ->whereBetween('sale_items.created_at', [$startDate, $endDate])
             ->groupBy('sale_items.product_id', 'sale_items.product_variant_id', 'categories.name', 'products.name', 'product_variants.name');
 
         if ($productId) {
@@ -114,9 +119,8 @@ class ReportController extends Controller
             ->join('products', 'sale_items.product_id', '=', 'products.id')
             ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
             ->leftJoin('product_variants', 'sale_items.product_variant_id', '=', 'product_variants.id')
-            ->whereHas('sale', function($q) {
-                $q->where('status', '!=', 'cancelled');
-            })
+            ->join('sales as s2', 'sale_items.sale_id', '=', 's2.id')
+            ->where('s2.status', '!=', 'cancelled')
             ->whereDate('sale_items.created_at', '>=', $startDate)
             ->whereDate('sale_items.created_at', '<=', $endDate)
             ->groupBy('sale_items.product_id', 'sale_items.product_variant_id', 'categories.name', 'products.name', 'product_variants.name');
@@ -222,5 +226,11 @@ class ReportController extends Controller
         $customers = \App\Models\Customer::orderBy('name')->get();
 
         return view('reports.receipts', compact('receipts', 'customers', 'startDate', 'endDate'));
+    }
+
+    public function receiptShow(Sale $sale)
+    {
+        $sale->load(['customer', 'items.variant.product', 'items.batches.stockBatch.warehouse', 'payments', 'creditAllocations']);
+        return view('reports.receipt_show', compact('sale'));
     }
 }

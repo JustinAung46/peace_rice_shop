@@ -40,49 +40,120 @@ class POSController extends Controller
         return view('pos.index', compact('products', 'categories', 'customers', 'warehouses'));
     }
 
+    /**
+     * Check stock availability for an entire cart in batch — no N+1.
+     *
+     * Instead of querying stock per cart item inside a loop, we:
+     *  1. Collect all (variant_id, warehouse_id) pairs from the cart.
+     *  2. Pull current stock sums in a single GROUP BY query.
+     *  3. Pull all alternative warehouse batches in a single query.
+     *  4. Pull all needed variants + their products in a single eager-load.
+     */
     public function checkStock(Request $request)
     {
-        $insufficientItems = [];
+        $cart = $request->cart ?? [];
 
-        foreach ($request->cart as $item) {
-            $variantId        = $item['variant_id'];
+        if (empty($cart)) {
+            return response()->json(['status' => 'ok']);
+        }
+
+        // ── 1. Batch-fetch stock sums for all (variant, warehouse) pairs ────────
+        $variantIds  = collect($cart)->pluck('variant_id')->unique()->values()->all();
+        $warehouseIds = collect($cart)->pluck('warehouse_id')->unique()->values()->all();
+
+        // Single query: SUM per (variant_id, warehouse_id)
+        $stockMap = StockBatch::whereIn('product_variant_id', $variantIds)
+            ->whereIn('warehouse_id', $warehouseIds)
+            ->where('remaining_quantity', '>', 0)
+            ->groupBy('product_variant_id', 'warehouse_id')
+            ->selectRaw('product_variant_id, warehouse_id, SUM(remaining_quantity) as total')
+            ->get()
+            ->groupBy('product_variant_id')
+            ->map(fn($rows) => $rows->pluck('total', 'warehouse_id'));
+
+        // ── 2. Find which items are insufficient ────────────────────────────────
+        $insufficientVariantIds = [];
+        $insufficientRequests   = [];
+
+        foreach ($cart as $item) {
+            $variantId         = $item['variant_id'];
+            $warehouseId       = $item['warehouse_id'];
             $quantityRequested = (int) $item['quantity'];
-            $warehouseId      = $item['warehouse_id'];
-
-            $available = StockBatch::where('product_variant_id', $variantId)
-                ->where('warehouse_id', $warehouseId)
-                ->sum('remaining_quantity');
+            $available         = $stockMap[$variantId][$warehouseId] ?? 0;
 
             if ($available < $quantityRequested) {
-                $needed = $quantityRequested - $available;
-
-                $alternateBatch = StockBatch::where('product_variant_id', $variantId)
-                    ->where('warehouse_id', '!=', $warehouseId)
-                    ->where('remaining_quantity', '>', 0)
-                    ->first();
-
-                $fromWarehouseId = $alternateBatch ? $alternateBatch->warehouse_id : null;
-                $fromWarehouse   = $fromWarehouseId ? Warehouse::find($fromWarehouseId) : null;
-
-                $variant = ProductVariant::find($variantId);
-
-                $insufficientItems[] = [
-                    'variant_id'         => $variantId,
-                    'product_name'       => $variant ? ($variant->product->name . ' – ' . $variant->name) : 'Unknown',
-                    'needed'             => $needed,
-                    'to_warehouse_id'    => $warehouseId,
-                    'to_warehouse_name'  => Warehouse::find($warehouseId)->name,
-                    'from_warehouse_id'  => $fromWarehouseId,
-                    'from_warehouse_name'=> $fromWarehouse ? $fromWarehouse->name : 'No other warehouse has stock',
+                $insufficientVariantIds[] = $variantId;
+                $insufficientRequests[]   = [
+                    'variant_id'        => $variantId,
+                    'warehouse_id'      => $warehouseId,
+                    'quantity_requested'=> $quantityRequested,
+                    'available'         => $available,
+                    'needed'            => $quantityRequested - $available,
                 ];
             }
         }
 
-        if (!empty($insufficientItems)) {
-            return response()->json(['status' => 'insufficient', 'items' => $insufficientItems]);
+        if (empty($insufficientRequests)) {
+            return response()->json(['status' => 'ok']);
         }
 
-        return response()->json(['status' => 'ok']);
+        // ── 3. Batch-fetch variants + products for insufficient items ───────────
+        $insufficientVariantIds = array_unique($insufficientVariantIds);
+        $variantsById = ProductVariant::with('product')
+            ->whereIn('id', $insufficientVariantIds)
+            ->get()
+            ->keyBy('id');
+
+        // ── 4. Batch-fetch alternate warehouse stock for insufficient variants ──
+        // One query: find another warehouse that has stock for these variants
+        $alternateStock = StockBatch::whereIn('product_variant_id', $insufficientVariantIds)
+            ->whereNotIn('warehouse_id', $warehouseIds)
+            ->where('remaining_quantity', '>', 0)
+            ->groupBy('product_variant_id', 'warehouse_id')
+            ->selectRaw('product_variant_id, warehouse_id, SUM(remaining_quantity) as total')
+            ->orderByDesc('total')
+            ->get()
+            ->groupBy('product_variant_id')
+            ->map(fn($rows) => $rows->first()); // best alternate warehouse per variant
+
+        // ── 5. Batch-fetch all warehouses needed for the response ───────────────
+        $allNeededWarehouseIds = collect($insufficientRequests)->pluck('warehouse_id')
+            ->merge(collect($alternateStock)->pluck('warehouse_id'))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $warehousesById = Warehouse::whereIn('id', $allNeededWarehouseIds)
+            ->get()
+            ->keyBy('id');
+
+        // ── 6. Build the response ────────────────────────────────────────────────
+        $insufficientItems = [];
+        foreach ($insufficientRequests as $req) {
+            $variantId   = $req['variant_id'];
+            $warehouseId = $req['warehouse_id'];
+            $variant     = $variantsById->get($variantId);
+            $alternate   = $alternateStock->get($variantId);
+
+            $fromWarehouseId = $alternate ? $alternate->warehouse_id : null;
+
+            $insufficientItems[] = [
+                'variant_id'          => $variantId,
+                'product_name'        => $variant
+                    ? ($variant->product->name . ' – ' . $variant->name)
+                    : 'Unknown',
+                'needed'              => $req['needed'],
+                'to_warehouse_id'     => $warehouseId,
+                'to_warehouse_name'   => $warehousesById->get($warehouseId)?->name ?? 'Unknown',
+                'from_warehouse_id'   => $fromWarehouseId,
+                'from_warehouse_name' => $fromWarehouseId
+                    ? ($warehousesById->get($fromWarehouseId)?->name ?? 'Unknown')
+                    : 'No other warehouse has stock',
+            ];
+        }
+
+        return response()->json(['status' => 'insufficient', 'items' => $insufficientItems]);
     }
 
     public function transferStock(Request $request, StockTransferService $stockTransferService)
@@ -127,17 +198,29 @@ class POSController extends Controller
             'sale_type'                  => 'nullable|in:retail,wholesale',
         ]);
 
+        // ── Pre-load all variants + products BEFORE the transaction ─────────────
+        // This avoids N+1 queries inside the locked transaction window.
+        $variantIds = collect($request->cart)->pluck('variant_id')->unique()->all();
+        $variantsById = ProductVariant::with('product')
+            ->whereIn('id', $variantIds)
+            ->get()
+            ->keyBy('id');
+
+        // ── Set a short lock wait timeout to fail fast instead of hanging 50s ───
+        // Default InnoDB lock_wait_timeout is 50s which exceeds PHP's 30+2s limit.
+        DB::statement('SET SESSION innodb_lock_wait_timeout = 5');
+
         try {
             DB::beginTransaction();
 
-            $date        = now()->format('Ymd');
-            $todayCount  = Sale::whereDate('created_at', now()->toDateString())->count();
+            $date          = now()->format('Ymd');
+            $todayCount    = Sale::whereDate('created_at', now()->toDateString())->count();
             $invoiceNumber = 'INV-' . $date . '-' . ($todayCount + 1);
 
             // Determine Payment Status
             $totalCreditAmount = collect($request->payments)->where('method', 'Credit')->sum('amount');
             $totalOtherAmount  = collect($request->payments)->where('method', '!=', 'Credit')->sum('amount');
-            
+
             $paymentStatus = 'paid';
             if ($totalCreditAmount > 0) {
                 $paymentStatus = ($totalOtherAmount > 0) ? 'partial' : 'unpaid';
@@ -157,7 +240,8 @@ class POSController extends Controller
             $totalSaleAmount = 0;
 
             foreach ($request->cart as $item) {
-                $variant           = ProductVariant::with('product')->findOrFail($item['variant_id']);
+                // Use pre-loaded variant — no query inside the transaction loop
+                $variant           = $variantsById->get($item['variant_id']);
                 $quantityRequested = (int) $item['quantity'];
                 $unitPrice         = (int) round($item['unit_price']);
                 $discount          = (int) round($item['discount'] ?? 0);
@@ -173,23 +257,26 @@ class POSController extends Controller
                     'product_variant_id' => $variant->id,
                     'quantity'           => $quantityRequested,
                     'unit_price'         => $unitPrice,
-                    'cost_price'         => 0, // calculated via FIFO
+                    'cost_price'         => 0, // calculated via FIFO below
                     'total_cost'         => 0,
                     'subtotal'           => $itemSubtotal,
                     'discount'           => $discount,
                     'total_price'        => $itemTotal,
                 ]);
 
-                // FIFO Stock Deduction
+                // FIFO Stock Deduction — lockForUpdate is correct here to prevent
+                // race conditions between concurrent sales of the same variant.
                 $batches = StockBatch::where('product_variant_id', $variant->id)
                     ->where('warehouse_id', $warehouseId)
                     ->where('remaining_quantity', '>', 0)
                     ->orderBy('purchase_date', 'asc')
+                    ->orderBy('id', 'asc')
                     ->lockForUpdate()
                     ->get();
 
                 $remainingToDeduct    = $quantityRequested;
                 $totalCostForThisItem = 0;
+                $saleItemBatchInserts = [];
 
                 foreach ($batches as $batch) {
                     if ($remainingToDeduct <= 0) break;
@@ -199,18 +286,25 @@ class POSController extends Controller
                     $batch->decrement('remaining_quantity', $take);
                     $totalCostForThisItem += ($batch->cost_price * $take);
 
-                    \App\Models\SaleItemBatch::create([
+                    $saleItemBatchInserts[] = [
                         'sale_item_id'   => $saleItem->id,
                         'stock_batch_id' => $batch->id,
                         'quantity'       => $take,
                         'cost_price'     => $batch->cost_price,
-                    ]);
+                        'created_at'     => now(),
+                        'updated_at'     => now(),
+                    ];
 
                     $remainingToDeduct -= $take;
                 }
 
                 if ($remainingToDeduct > 0) {
                     throw new \Exception("Not enough stock for {$variant->product->name}. Missing: {$remainingToDeduct}");
+                }
+
+                // Bulk-insert SaleItemBatch rows — one INSERT instead of N INSERTs
+                if (!empty($saleItemBatchInserts)) {
+                    \App\Models\SaleItemBatch::insert($saleItemBatchInserts);
                 }
 
                 $saleItem->update([

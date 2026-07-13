@@ -53,6 +53,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('reports/items', [ReportController::class, 'saleItemsReport'])->name('reports.items');
         Route::get('reports/items/export', [ReportController::class, 'exportSaleItems'])->name('reports.items.export');
         Route::get('reports/receipts', [ReportController::class, 'receipts'])->name('reports.receipts');
+        Route::get('reports/receipts/{sale}', [ReportController::class, 'receiptShow'])->name('reports.receipts.show');
     });
 
     Route::middleware(['can:admin'])->group(function () {

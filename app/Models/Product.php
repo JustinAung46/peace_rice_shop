@@ -50,8 +50,9 @@ class Product extends Model
 
     public function scopeWithActiveCategory($query)
     {
-        return $query->whereHas('category', function ($q) {
-            $q->where('is_active', true);
+        // Use whereIn with a subquery instead of whereHas to avoid correlated EXISTS subquery
+        return $query->whereIn('category_id', function ($q) {
+            $q->select('id')->from('categories')->where('is_active', true);
         });
     }
 }

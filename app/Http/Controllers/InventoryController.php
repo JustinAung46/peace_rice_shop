@@ -16,18 +16,15 @@ class InventoryController extends Controller
 
     public function index()
     {
-        $products = Product::withActiveCategory()->with(['category', 'variants'])
-            ->get()
-            ->map(function ($product) {
-                // Attach total_stock per variant
-                $product->variants->each(function ($variant) {
-                    $variant->total_stock = StockBatch::where('product_variant_id', $variant->id)
-                        ->sum('remaining_quantity');
-                });
-                return $product;
-            });
+        $products = Product::withActiveCategory()->with(['category', 'variants' => function ($q) {
+                $q->withSum(['stockBatches as total_stock' => function ($sq) {
+                    $sq->where('remaining_quantity', '>', 0);
+                }], 'remaining_quantity');
+            }])
+            ->get();
 
         $categories = \App\Models\Category::active()->get();
+
         return view('inventory.index', compact('products', 'categories'));
     }
 
