@@ -1,7 +1,15 @@
 <div id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 h-full flex flex-col transform transition-all duration-300 ease-in-out lg:static translate-x-0 [.sidebar-closed_&]:-translate-x-full lg:[.sidebar-closed_&]:w-0 lg:[.sidebar-closed_&]:translate-x-0 overflow-hidden">
     <!-- Logo -->
+    @php
+        $sidebarLogo = \App\Models\Setting::get('site_logo');
+        $sidebarName = \App\Models\Setting::get('shop_name', 'RICE SHOP');
+        $sidebarLogoMtime = $sidebarLogo && file_exists(storage_path('app/public/' . $sidebarLogo)) ? filemtime(storage_path('app/public/' . $sidebarLogo)) : '1';
+    @endphp
     <div class="flex items-center justify-center h-16 bg-slate-950 px-4">
-        <span class="text-white text-xl font-bold tracking-wider">RICE SHOP</span>
+        @if($sidebarLogo)
+            <img src="{{ asset('storage/' . $sidebarLogo) }}?v={{ $sidebarLogoMtime }}" alt="Shop logo" class="h-10 w-auto rounded-md object-contain" width="40" height="40" fetchpriority="high" />
+        @endif
+        <span class="text-white text-xl font-bold tracking-wider {{ $sidebarLogo ? 'ml-3' : '' }}">{{ $sidebarName }}</span>
     </div>
 
     <!-- Navigation -->
@@ -20,7 +28,7 @@
             <li class="mt-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Inventory</li>
             <li>
                 <a href="{{ route('inventory.index') }}" class="group flex items-center px-4 py-3.5 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors {{ request()->routeIs('inventory.index') ? 'bg-slate-800 text-white' : '' }}">
-                    <svg class="w-6 h-6 mr-3 shrink-0" fill="none" viewBox="0 24 24 24" stroke="currentColor">
+                    <svg class="w-6 h-6 mr-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                     </svg>
                     <span class="text-base font-medium">Stock Management</span>
@@ -44,7 +52,7 @@
             </li>
             <li>
                 <a href="{{ route('inventory.stock.add') }}" class="group flex items-center px-4 py-3.5 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors {{ request()->routeIs('inventory.stock.add') ? 'bg-slate-800 text-white' : '' }}">
-                     <svg class="w-6 h-6 mr-3 shrink-0" fill="none" viewBox="0 24 24 24" stroke="currentColor">
+                     <svg class="w-6 h-6 mr-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
                     <span class="text-base font-medium">Add Stock (Inbound)</span>
@@ -52,10 +60,18 @@
             </li>
             <li>
                 <a href="{{ route('inventory.transfer') }}" class="group flex items-center px-4 py-3.5 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors {{ request()->routeIs('inventory.transfer') ? 'bg-slate-800 text-white' : '' }}">
-                    <svg class="w-6 h-6 mr-3 shrink-0" fill="none" viewBox="0 24 24 24" stroke="currentColor">
+                    <svg class="w-6 h-6 mr-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                     </svg>
                     <span class="text-base font-medium">Stock Transfer</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('inventory.transform') }}" class="group flex items-center px-4 py-3.5 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors {{ request()->routeIs('inventory.transform') ? 'bg-slate-800 text-white' : '' }}">
+                    <svg class="w-6 h-6 mr-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l2-2-2-2m4 0l2 2-2 2m0-10a7 7 0 00-7 7 7 7 0 007 7 7 7 0 007-7 7 7 0 00-7-7z" />
+                    </svg>
+                    <span class="text-base font-medium">Stock Transform</span>
                 </a>
             </li>
             <li>
@@ -72,7 +88,7 @@
             @can('view-pos')
             <li>
                 <a href="{{ route('pos.index') }}" class="group flex items-center px-4 py-3.5 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors {{ request()->routeIs('pos.index') ? 'bg-slate-800 text-white' : '' }}">
-                    <svg class="w-6 h-6 mr-3 shrink-0" fill="none" viewBox="0 24 24 24" stroke="currentColor">
+                    <svg class="w-6 h-6 mr-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                     <span class="text-base font-medium">Point of Sale</span>
@@ -104,7 +120,7 @@
             <li class="mt-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Reports</li>
             <li>
                 <a href="{{ route('reports.index') }}" class="group flex items-center px-4 py-3.5 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors {{ request()->routeIs('reports.index') ? 'bg-slate-800 text-white' : '' }}">
-                    <svg class="w-6 h-6 mr-3 shrink-0" fill="none" viewBox="0 24 24 24" stroke="currentColor">
+                    <svg class="w-6 h-6 mr-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     <span class="text-base font-medium">Profit Dashboard</span>

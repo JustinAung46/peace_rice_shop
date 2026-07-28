@@ -1,26 +1,28 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="flex h-[calc(100vh-8rem)] gap-6">
+<div class="flex flex-col lg:flex-row min-h-[calc(100vh-8rem)] gap-6 overflow-x-hidden">
     <!-- Categories Sidebar (Left) -->
-    <div class="w-40 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
+    <div class="w-full lg:w-40 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden lg:max-h-[calc(100vh-8rem)]">
         <div class="p-4 bg-slate-50 border-b border-slate-100">
             <h3 class="font-bold text-slate-700">Categories</h3>
         </div>
-        <div class="flex-1 overflow-y-auto p-2 space-y-1">
-            <button onclick="filterCategory('all')" class="w-full text-left px-4 py-3 rounded-xl text-base font-bold transition-colors bg-indigo-50 text-indigo-700 hover:bg-indigo-100 shadow-sm border border-indigo-100 category-btn" data-id="all">
-                All Products
-            </button>
-            @foreach($categories as $category)
-            <button onclick="filterCategory({{ $category->id }})" class="w-full text-left px-4 py-3 rounded-xl text-base font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent hover:border-slate-100 transition-colors category-btn" data-id="{{ $category->id }}">
-                {{ $category->name }}
-            </button>
-            @endforeach
+        <div class="flex-1 overflow-y-auto p-2 max-h-[240px] sm:max-h-[320px]">
+            <div class="flex gap-2 overflow-x-auto pb-2 sm:block sm:overflow-visible sm:pb-0">
+                <button onclick="filterCategory('all')" class="inline-flex whitespace-nowrap w-auto text-left px-4 py-3 rounded-xl text-base font-bold transition-colors bg-indigo-50 text-indigo-700 hover:bg-indigo-100 shadow-sm border border-indigo-100 category-btn" data-id="all">
+                    All Products
+                </button>
+                @foreach($categories as $category)
+                <button onclick="filterCategory({{ $category->id }})" class="inline-flex whitespace-nowrap w-auto text-left px-4 py-3 rounded-xl text-base font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent hover:border-slate-100 transition-colors category-btn" data-id="{{ $category->id }}">
+                    {{ $category->name }}
+                </button>
+                @endforeach
+            </div>
         </div>
     </div>
 
     <!-- Product Grid (Middle) -->
-    <div class="flex-1 flex flex-col overflow-hidden">
+    <div class="flex-1 flex flex-col overflow-hidden order-2 lg:order-1 min-w-0 min-h-0 lg:h-[calc(100vh-8rem)]">
         <!-- Search & Customer Select -->
         <div class="mb-4 flex flex-col sm:flex-row gap-3 items-stretch">
             <div class="flex-1 relative">
@@ -49,8 +51,8 @@
             </div>
         </div>
 
-        <div class="flex-1 overflow-y-auto pr-2">
-            <div class="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-4" id="product-grid">
+        <div class="flex-1 overflow-y-auto pr-2 min-w-0 min-h-0 h-full">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-4" id="product-grid">
                 @foreach($products as $product)
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 cursor-pointer hover:border-indigo-500 hover:shadow-md transition-all product-card group transform active:scale-95"
                      data-category="{{ $product->category_id ?? 'uncategorized' }}"
@@ -79,13 +81,13 @@
     </div>
 
     <!-- Cart (Right) -->
-    <div class="w-80 bg-white rounded-xl shadow-lg border border-slate-200 flex flex-col overflow-hidden">
-        <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+    <div class="w-full lg:w-80 max-w-full bg-white rounded-xl shadow-lg border border-slate-200 flex flex-col overflow-hidden order-3 lg:order-2 min-w-0 lg:h-[calc(100vh-8rem)] lg:max-h-[calc(100vh-8rem)]">
+        <div class="p-4 border-b border-slate-100 bg-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <h2 class="text-lg font-bold text-slate-800 flex items-center">
                 <svg class="w-5 h-5 mr-2 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
                 Current Order
             </h2>
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2">
                 <a href="{{ route('reports.receipts') }}" class="text-xs px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 font-bold transition-colors border border-indigo-200 flex items-center justify-center" title="Recent Transactions">Recent Sales</a>
                 <button onclick="clearCart()" class="text-xs px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-bold transition-colors border border-red-100" title="Clear Cart">Clear</button>
             </div>
@@ -115,7 +117,7 @@
             </div>
 
             <!-- Payment Methods Selection -->
-            <div class="grid grid-cols-3 gap-2 mb-3">
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
                 <button onclick="addPayment('Cash')" id="btn-cash" class="py-2.5 px-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 active:scale-95 transition-all shadow-sm flex flex-col items-center gap-1">
                     <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     Cash
@@ -131,7 +133,7 @@
             </div>
 
             <!-- Active Payments List -->
-            <div id="active-payments" class="space-y-1.5 mb-3 max-h-24 overflow-y-auto">
+            <div id="active-payments" class="space-y-1.5 mb-3 max-h-28 overflow-y-auto">
                 <!-- Payment rows will be added here -->
             </div>
 

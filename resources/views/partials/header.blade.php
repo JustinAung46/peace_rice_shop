@@ -12,6 +12,17 @@
                         <rect x="3" y="17" width="18" height="2" rx="1" />
                     </svg>
                 </button>
+                <div class="flex items-center ml-4">
+                    @php
+                        $siteLogo = \App\Models\Setting::get('site_logo');
+                        $shopName = \App\Models\Setting::get('shop_name', 'RICE SHOP');
+                        $headerLogoMtime = $siteLogo && file_exists(storage_path('app/public/' . $siteLogo)) ? filemtime(storage_path('app/public/' . $siteLogo)) : '1';
+                    @endphp
+                    @if($siteLogo)
+                        <img src="{{ asset('storage/' . $siteLogo) }}?v={{ $headerLogoMtime }}" alt="Shop logo" class="h-10 w-auto rounded-md object-contain" width="40" height="40" fetchpriority="high" />
+                    @endif
+                    <span class="text-lg font-bold text-slate-900 tracking-wide {{ $siteLogo ? 'ml-3' : '' }}">{{ $shopName }}</span>
+                </div>
             </div>
 
             <!-- Header: Right side -->

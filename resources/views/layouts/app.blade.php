@@ -5,6 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Rice Shop Management</title>
     
+    @php
+        $preloadLogo = \App\Models\Setting::get('site_logo');
+        $logoMtime = $preloadLogo && file_exists(storage_path('app/public/' . $preloadLogo)) ? filemtime(storage_path('app/public/' . $preloadLogo)) : '1';
+    @endphp
+    @if($preloadLogo)
+        @php
+            $logoExtension = pathinfo($preloadLogo, PATHINFO_EXTENSION);
+            $logoType = $logoExtension === 'webp' ? 'image/webp' : ($logoExtension === 'png' ? 'image/png' : 'image/jpeg');
+        @endphp
+        <link rel="preload" href="{{ asset('storage/' . $preloadLogo) }}?v={{ $logoMtime }}" as="image" type="{{ $logoType }}" fetchpriority="high">
+    @endif
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     
     <style>
@@ -19,7 +35,7 @@
         }
     </style>
 </head>
-<body class="bg-slate-50 font-sans antialiased text-slate-800">
+<body class="bg-slate-50 antialiased text-slate-800" style="font-family: 'Inter', sans-serif;">
     <div id="layout-wrapper" class="flex h-screen overflow-hidden">
         <!-- Sidebar -->
         @include('partials.sidebar')

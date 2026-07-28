@@ -58,6 +58,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware(['can:admin'])->group(function () {
         Route::resource('accounts', AccountController::class);
+        Route::post('accounts/settings', [AccountController::class, 'updateSettings'])->name('accounts.settings.update');
 
         // Credit Payment: Edit, Delete, Audit Log
         Route::put('credits/payment/{payment}',    [\App\Http\Controllers\CreditController::class, 'updatePayment'])->name('credits.payment.update');

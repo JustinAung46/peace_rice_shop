@@ -60,11 +60,7 @@
         
         <div class="flex gap-3 pt-4 border-t border-slate-100 z-10 mt-auto">
             <a href="{{ route('customers.edit', $customer->id) }}" class="flex-1 text-center py-3 bg-slate-100 font-bold text-slate-700 rounded-xl hover:bg-slate-200 transition-colors focus:ring-2 focus:ring-slate-300">Edit</a>
-            <form action="{{ route('customers.destroy', $customer->id) }}" method="POST" class="flex-1" onsubmit="return confirm('Are you sure you want to delete this customer?');">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="w-full py-3 bg-red-50 font-bold text-red-600 rounded-xl hover:bg-red-100 transition-colors focus:ring-2 focus:ring-red-300">Delete</button>
-            </form>
+            <button type="button" onclick="openDeleteCustomerModal({{ $customer->id }}, '{{ addslashes($customer->name) }}')" class="flex-1 py-3 bg-red-50 font-bold text-red-600 rounded-xl hover:bg-red-100 transition-colors focus:ring-2 focus:ring-red-300">Delete</button>
         </div>
     </div>
     @empty
@@ -83,4 +79,41 @@
     </div>
     @endforelse
 </div>
+
+<!-- Delete Confirmation Modal -->
+<div id="delete-customer-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4 overflow-y-auto">
+    <div class="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl">
+        <div class="p-6 border-b border-slate-200">
+            <h3 class="text-xl font-bold text-slate-900">Confirm Delete</h3>
+            <p id="delete-customer-message" class="mt-2 text-sm text-slate-600">Are you sure you want to delete this customer?</p>
+        </div>
+        <form id="delete-customer-form" method="POST" class="p-6 space-y-4">
+            @csrf
+            @method('DELETE')
+            <div class="flex gap-3">
+                <button type="button" onclick="closeDeleteCustomerModal()" class="flex-1 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
+                <button type="submit" class="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors">Delete</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openDeleteCustomerModal(customerId, customerName) {
+        const modal = document.getElementById('delete-customer-modal');
+        const form = document.getElementById('delete-customer-form');
+        const message = document.getElementById('delete-customer-message');
+
+        form.action = '/customers/' + customerId;
+        message.textContent = `Delete "${customerName}"? This action cannot be undone.`;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeDeleteCustomerModal() {
+        const modal = document.getElementById('delete-customer-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+</script>
 @endsection
