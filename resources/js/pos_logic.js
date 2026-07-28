@@ -103,8 +103,8 @@ function renderPickerVariants() {
         if (pickerPriceMode === 'wholesale') {
             displayPrice = v.selling_price;
         } else {
-            if (v.price_per_pyi && v.pyi_per_bag) {
-                displayPrice = parseInt(v.price_per_pyi) * parseInt(v.pyi_per_bag);
+            if (v.retail_price) {
+                displayPrice = parseInt(v.retail_price);
             } else {
                 return;
             }
@@ -271,7 +271,7 @@ function pickerUpdateTotal() {
     const v = pickerVariants.find(x => x.id === pickerSelectedId);
     if (!v) return;
 
-    let unitPrice = pickerPriceMode === 'wholesale' ? parseInt(v.selling_price) : parseInt(v.price_per_pyi) * parseInt(v.pyi_per_bag);
+    let unitPrice = pickerPriceMode === 'wholesale' ? parseInt(v.selling_price) : parseInt(v.retail_price);
     const total = unitPrice * pickerQty;
     document.getElementById('picker-total-display').innerHTML = `${total.toLocaleString()} <span class="text-sm font-bold text-slate-400">MMK</span>`;
 }
@@ -281,7 +281,7 @@ function pickerAddToCart() {
     const v = pickerVariants.find(x => x.id === pickerSelectedId);
     if (!v) return;
 
-    let unitPrice = pickerPriceMode === 'wholesale' ? parseInt(v.selling_price) : parseInt(v.price_per_pyi) * parseInt(v.pyi_per_bag);
+    let unitPrice = pickerPriceMode === 'wholesale' ? parseInt(v.selling_price) : parseInt(v.retail_price);
     let priceLabel = pickerPriceMode === 'wholesale' ? '(Wholesale)' : '(Retail)';
 
     const warehouseId = parseInt(document.getElementById('session-warehouse').value);

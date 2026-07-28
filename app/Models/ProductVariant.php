@@ -12,8 +12,8 @@ class ProductVariant extends Model
         'sku',
         'unit_label',
         'selling_price',
-        'pyi_per_bag',
-        'price_per_pyi',
+        'bag_factor',
+        'retail_price',
         'is_active',
     ];
 

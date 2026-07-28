@@ -90,16 +90,16 @@
                             value="{{ old('variants.e'.$variant->id.'.selling_price', $variant->selling_price) }}">
                     </div>
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-600 mb-1 uppercase tracking-wide">Pyi/Bag</label>
-                        <input type="number" name="variants[e{{ $variant->id }}][pyi_per_bag]" min="1" step="1"
+                        <label class="block text-[10px] font-bold text-slate-600 mb-1 uppercase tracking-wide">Bag Factor</label>
+                        <input type="number" name="variants[e{{ $variant->id }}][bag_factor]" min="0" step="any"
                             class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                            value="{{ old('variants.e'.$variant->id.'.pyi_per_bag', $variant->pyi_per_bag) }}">
+                            value="{{ old('variants.e'.$variant->id.'.bag_factor', $variant->bag_factor) }}">
                     </div>
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-600 mb-1 uppercase tracking-wide">Retail (Pyi)</label>
-                        <input type="number" name="variants[e{{ $variant->id }}][price_per_pyi]" min="0" step="1"
+                        <label class="block text-[10px] font-bold text-slate-600 mb-1 uppercase tracking-wide">Retail (Bag)</label>
+                        <input type="number" name="variants[e{{ $variant->id }}][retail_price]" min="0" step="1"
                             class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                            value="{{ old('variants.e'.$variant->id.'.price_per_pyi', $variant->price_per_pyi) }}">
+                            value="{{ old('variants.e'.$variant->id.'.retail_price', $variant->retail_price) }}">
                     </div>
                     <div>
                         <label class="block text-[10px] font-bold text-slate-600 mb-1 uppercase tracking-wide text-center">Active</label>
@@ -161,13 +161,13 @@ function addVariantRow(data = {}) {
                 class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
         </div>
         <div>
-            <label class="block text-[10px] font-bold text-slate-600 mb-1 uppercase tracking-wide">Pyi/Bag</label>
-            <input type="number" name="variants[${idx}][pyi_per_bag]" min="1" step="1" placeholder="6"
+            <label class="block text-[10px] font-bold text-slate-600 mb-1 uppercase tracking-wide">Bag Factor</label>
+            <input type="number" name="variants[${idx}][bag_factor]" min="0" step="any" placeholder="1 or 0.5"
                 class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
         </div>
         <div>
-            <label class="block text-[10px] font-bold text-slate-600 mb-1 uppercase tracking-wide">Retail (Pyi)</label>
-            <input type="number" name="variants[${idx}][price_per_pyi]" min="0" step="1" placeholder="0"
+            <label class="block text-[10px] font-bold text-slate-600 mb-1 uppercase tracking-wide">Retail (Bag)</label>
+            <input type="number" name="variants[${idx}][retail_price]" min="0" step="1" placeholder="0"
                 class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
         </div>
         <div>

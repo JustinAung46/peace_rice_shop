@@ -47,8 +47,8 @@ class InventoryController extends Controller
             'variants.*.unit_label'  => 'required|string|max:50',
             'variants.*.selling_price' => 'required|integer|min:0',
             'variants.*.sku'               => 'nullable|string|distinct',
-            'variants.*.pyi_per_bag'       => 'nullable|integer|min:1',
-            'variants.*.price_per_pyi'     => 'nullable|integer|min:0',
+            'variants.*.bag_factor'        => 'nullable|numeric|min:0',
+            'variants.*.retail_price'      => 'nullable|integer|min:0',
             'variants.*.is_active'         => 'nullable|boolean',
             'is_active'                    => 'nullable|boolean',
         ]);
@@ -81,8 +81,8 @@ class InventoryController extends Controller
                 'unit_label'    => $variantData['unit_label'],
                 'selling_price' => $variantData['selling_price'],
                 'sku'           => $variantData['sku'] ?? null,
-                'pyi_per_bag'   => $variantData['pyi_per_bag'] ?? null,
-                'price_per_pyi' => $variantData['price_per_pyi'] ?? null,
+                'bag_factor'    => $variantData['bag_factor'] ?? null,
+                'retail_price'  => $variantData['retail_price'] ?? null,
                 'is_active'     => isset($variantData['is_active']),
             ]);
         }
@@ -109,8 +109,8 @@ class InventoryController extends Controller
             'variants.*.unit_label'  => 'required|string|max:50',
             'variants.*.selling_price' => 'required|integer|min:0',
             'variants.*.sku'               => 'nullable|string',
-            'variants.*.pyi_per_bag'       => 'nullable|integer|min:1',
-            'variants.*.price_per_pyi'     => 'nullable|integer|min:0',
+            'variants.*.bag_factor'        => 'nullable|numeric|min:0',
+            'variants.*.retail_price'      => 'nullable|integer|min:0',
             'variants.*.is_active'         => 'nullable|boolean',
             'is_active'                    => 'nullable|boolean',
         ]);
@@ -163,8 +163,8 @@ class InventoryController extends Controller
                 'unit_label'    => $variantData['unit_label'],
                 'selling_price' => $variantData['selling_price'],
                 'sku'           => $variantData['sku'] ?? null,
-                'pyi_per_bag'   => $variantData['pyi_per_bag'] ?? null,
-                'price_per_pyi' => $variantData['price_per_pyi'] ?? null,
+                'bag_factor'    => $variantData['bag_factor'] ?? null,
+                'retail_price'  => $variantData['retail_price'] ?? null,
                 'is_active'     => isset($variantData['is_active']),
             ];
 
@@ -354,15 +354,15 @@ class InventoryController extends Controller
 
     public function transform()
     {
-        // Only show products that have at least one variant with pyi_per_bag set
+        // Only show products that have at least one variant with bag_factor set
         $products = Product::withActiveCategory()->with(['variants' => function ($q) {
-            $q->whereNotNull('pyi_per_bag')
+            $q->whereNotNull('bag_factor')
               ->with(['stockBatches' => function($sq) {
                   $sq->where('remaining_quantity', '>', 0)
                     ->select('id', 'product_variant_id', 'warehouse_id', 'remaining_quantity');
               }]);
         }])->whereHas('variants', function ($q) {
-            $q->whereNotNull('pyi_per_bag');
+            $q->whereNotNull('bag_factor');
         })->get();
 
         $warehouses = \App\Models\Warehouse::all();
@@ -378,7 +378,7 @@ class InventoryController extends Controller
                         'name' => $v->name,
                         'selling_price' => $v->selling_price,
                         'unit_label' => $v->unit_label,
-                        'pyi_per_bag' => $v->pyi_per_bag,
+                        'bag_factor' => $v->bag_factor,
                         'stock_batches' => $v->stockBatches
                     ];
                 })
@@ -428,8 +428,8 @@ class InventoryController extends Controller
                 return back()->with('error', "Item " . ($index + 1) . ": invalid variant selection.")->withInput();
             }
 
-            if (!$original->pyi_per_bag || !$target->pyi_per_bag) {
-                return back()->with('error', "Item " . ($index + 1) . ": both variants must have \"Pyi per Bag\" set.")->withInput();
+            if (!$original->bag_factor || !$target->bag_factor) {
+                return back()->with('error', "Item " . ($index + 1) . ": both variants must have \"Bag Factor\" set.")->withInput();
             }
 
             $totalRequested[$original->id] = ($totalRequested[$original->id] ?? 0) + $row['quantity'];
@@ -454,7 +454,7 @@ class InventoryController extends Controller
                     $originalVariant = $variants->get($row['source_variant_id']);
                     $targetVariant   = $variants->get($row['target_variant_id']);
                     $quantityToDeduct = $row['quantity'];
-                    $targetQtyPerOriginalBag = $originalVariant->pyi_per_bag / $targetVariant->pyi_per_bag;
+                    $targetQtyPerOriginalBag = $originalVariant->bag_factor / $targetVariant->bag_factor;
 
                     $batches = StockBatch::where('product_variant_id', $originalVariant->id)
                         ->where('warehouse_id', $warehouseId)

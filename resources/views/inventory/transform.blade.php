@@ -263,11 +263,11 @@ function loadSourceVariants(productId, keepVariant = false) {
     product.variants.forEach(v => {
         const opt = document.createElement('option');
         opt.value = v.id;
-        opt.textContent = v.pyi_per_bag ? `${v.name} (${v.pyi_per_bag} Pyi/Bag)` : v.name;
+        opt.textContent = v.bag_factor ? `${v.name} (${v.bag_factor} Bag Factor)` : v.name;
 
         opt.dataset.stockBatches = JSON.stringify(v.stock_batches || []);
         opt.dataset.unitLabel = v.unit_label;
-        opt.dataset.pyiPerBag = v.pyi_per_bag || 1;
+        opt.dataset.bagFactor = v.bag_factor || 1;
         opt.dataset.productName = product.name;
         opt.dataset.variantName = v.name;
 
@@ -305,9 +305,9 @@ function loadTargetVariants(productId, keepVariant = false) {
     product.variants.forEach(v => {
         const opt = document.createElement('option');
         opt.value = v.id;
-        opt.textContent = v.pyi_per_bag ? `${v.name} (${v.pyi_per_bag} Pyi/Bag)` : v.name;
+        opt.textContent = v.bag_factor ? `${v.name} (${v.bag_factor} Bag Factor)` : v.name;
 
-        opt.dataset.pyiPerBag = v.pyi_per_bag || 1;
+        opt.dataset.bagFactor = v.bag_factor || 1;
         opt.dataset.productName = product.name;
         opt.dataset.variantName = v.name;
 
@@ -463,8 +463,8 @@ function addToTransformList() {
         source_variant_name: sourceVariant.name,
         target_product_name: targetProduct.name,
         target_variant_name: targetVariant.name,
-        source_pyi_per_bag: sourceVariant.pyi_per_bag,
-        target_pyi_per_bag: targetVariant.pyi_per_bag
+        source_bag_factor: sourceVariant.bag_factor,
+        target_bag_factor: targetVariant.bag_factor
     });
 
     updateTransformListUI();
