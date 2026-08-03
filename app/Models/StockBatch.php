@@ -16,6 +16,9 @@ class StockBatch extends Model
         'purchase_date',
         'batch_code',
         'purchase_order_receipt_item_id',
+        'purchase_cost',
+        'delivery_cost',
+        'landed_cost',
     ];
 
     public function product()

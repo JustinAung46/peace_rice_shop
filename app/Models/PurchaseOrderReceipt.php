@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class PurchaseOrderReceipt extends Model
 {
-    protected $fillable = ['purchase_order_id', 'received_date', 'notes', 'received_by'];
+    protected $fillable = ['purchase_order_id', 'received_date', 'notes', 'received_by', 'delivery_rate'];
 
     protected $casts = ['received_date' => 'date'];
 

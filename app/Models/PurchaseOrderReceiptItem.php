@@ -8,6 +8,7 @@ class PurchaseOrderReceiptItem extends Model
 {
     protected $fillable = [
         'purchase_order_receipt_id', 'purchase_order_item_id', 'warehouse_id', 'quantity',
+        'purchase_cost', 'delivery_cost', 'landed_cost',
     ];
 
     public function receipt()

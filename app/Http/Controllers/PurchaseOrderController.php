@@ -277,6 +277,7 @@ class PurchaseOrderController extends Controller
 
         $validated = $request->validate([
             'received_date'                          => 'required|date',
+            'delivery_rate'                          => 'nullable|integer|min:0',
             'notes'                                  => 'nullable|string|max:1000',
             'items'                                  => 'required|array|min:1',
             'items.*.order_item_id'                  => 'required|exists:purchase_order_items,id',
@@ -289,6 +290,7 @@ class PurchaseOrderController extends Controller
             $receipt = PurchaseOrderReceipt::create([
                 'purchase_order_id' => $purchaseOrder->id,
                 'received_date'     => $validated['received_date'],
+                'delivery_rate'     => $validated['delivery_rate'] ?? 0,
                 'notes'             => $validated['notes'] ?? null,
                 'received_by'       => auth()->id(),
             ]);
@@ -300,6 +302,13 @@ class PurchaseOrderController extends Controller
                 if ($orderItem->purchase_order_id !== $purchaseOrder->id) {
                     throw new \Exception('Invalid order item.');
                 }
+
+                $bagFactor = optional($orderItem->variant)->bag_factor ?? 1.0;
+                $deliveryRate = $validated['delivery_rate'] ?? 0;
+                
+                $purchaseCost = $orderItem->cost_price;
+                $deliveryCost = (int) round($deliveryRate * $bagFactor);
+                $landedCost = $purchaseCost + $deliveryCost;
 
                 $totalArrived = collect($itemData['warehouses'])->sum('quantity');
 
@@ -320,6 +329,9 @@ class PurchaseOrderController extends Controller
                         'purchase_order_item_id'    => $orderItem->id,
                         'warehouse_id'              => $whData['warehouse_id'],
                         'quantity'                  => $whData['quantity'],
+                        'purchase_cost'             => $purchaseCost,
+                        'delivery_cost'             => $deliveryCost,
+                        'landed_cost'               => $landedCost,
                     ]);
 
                     // Create stock batch — this is the core financial action
@@ -329,7 +341,10 @@ class PurchaseOrderController extends Controller
                         'warehouse_id'                   => $whData['warehouse_id'],
                         'original_quantity'              => $whData['quantity'],
                         'remaining_quantity'             => $whData['quantity'],
-                        'cost_price'                     => $orderItem->cost_price,
+                        'cost_price'                     => $landedCost,
+                        'purchase_cost'                  => $purchaseCost,
+                        'delivery_cost'                  => $deliveryCost,
+                        'landed_cost'                    => $landedCost,
                         'purchase_date'                  => $validated['received_date'],
                         'batch_code'                     => $purchaseOrder->order_number,
                         'purchase_order_receipt_item_id' => $receiptItem->id,

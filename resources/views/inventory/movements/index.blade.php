@@ -107,8 +107,8 @@
                         @if($movement->productVariant)
                             <span class="text-xs text-blue-600 font-semibold block">{{ $movement->productVariant->name }}</span>
                         @endif
-                        @if($movement->product && $movement->product->pyi_per_bag)
-                            <span class="text-xs text-slate-500 block">({{ $movement->product->pyi_per_bag }} Pyi)</span>
+                        @if($movement->productVariant && $movement->productVariant->bag_factor)
+                            <span class="text-xs text-slate-500 block">(Factor: {{ $movement->productVariant->bag_factor }})</span>
                         @endif
                     </td>
                     <td class="px-6 py-4 text-center font-semibold text-slate-700">
@@ -130,8 +130,8 @@
                                         <span class="text-xs text-blue-600 font-semibold block">{{ $movement->targetVariant->name }}</span>
                                     @endif
                                 </div>
-                                @if($movement->targetProduct && $movement->targetProduct->pyi_per_bag)
-                                    <span class="ml-1 text-slate-500">({{ $movement->targetProduct->pyi_per_bag }} Pyi)</span>
+                                @if($movement->targetVariant && $movement->targetVariant->bag_factor)
+                                    <span class="ml-1 text-slate-500">(Factor: {{ $movement->targetVariant->bag_factor }})</span>
                                 @endif
                                 <br>
                                 <span class="text-slate-500 ml-2">Wh: {{ $movement->fromWarehouse ? $movement->fromWarehouse->name : 'N/A' }}</span>
