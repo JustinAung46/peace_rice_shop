@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Sale;
+use App\Models\Setting;
 
 class ReceiptFormatter
 {
@@ -30,33 +31,33 @@ class ReceiptFormatter
         */
 
         $segments[] = [
-            'left' => 'ငြိမ်းချမ်း',
-            'size' => 44.0,
-            'bold' => true,
-            'center' => true,
+            'left'        => Setting::get('shop_name',     config('shop.name')),
+            'size'        => 44.0,
+            'bold'        => true,
+            'center'      => true,
             'spaceBefore' => 1,
-            'spaceAfter' => 5
+            'spaceAfter'  => 5
         ];
 
         $segments[] = [
-            'left' => 'ဆန်ရောင်းဝယ်ရေး',
-            'size' => 42.0,
-            'bold' => true,
-            'center' => true,
+            'left'        => Setting::get('shop_subtitle',  config('shop.subtitle')),
+            'size'        => 42.0,
+            'bold'        => true,
+            'center'      => true,
             'spaceBefore' => 10,
-            'spaceAfter' => 5
+            'spaceAfter'  => 5
         ];
 
         $segments[] = [
-            'left' => 'ရပ်ကွက်(၉) ဘူတာလမ်း လားရှိုးမြို့',
-            'size' => 24.0,
+            'left'   => Setting::get('shop_address', config('shop.address')),
+            'size'   => 24.0,
             'center' => true
         ];
 
         $segments[] = [
-            'left' => 'Tel: 09-788024237, 09-5370682',
-            'size' => 22.0,
-            'center' => true,
+            'left'       => 'Tel: ' . Setting::get('shop_phone', config('shop.phone')),
+            'size'       => 22.0,
+            'center'     => true,
             'spaceAfter' => 5
         ];
 
@@ -219,16 +220,16 @@ class ReceiptFormatter
         */
 
         $segments[] = [
-            'left' => 'Thank You, Please Come Again',
-            'center' => true,
-            'size' => 22.0,
+            'left'       => Setting::get('shop_footer1', config('shop.footer1')),
+            'center'     => true,
+            'size'       => 22.0,
             'spaceAfter' => 5
         ];
 
         $segments[] = [
-            'left' => 'Powered by Peace POS',
-            'center' => true,
-            'size' => 18.0,
+            'left'       => Setting::get('shop_footer2', config('shop.footer2')),
+            'center'     => true,
+            'size'       => 18.0,
             'spaceAfter' => 30
         ];
 

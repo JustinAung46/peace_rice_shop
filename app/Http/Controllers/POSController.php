@@ -341,10 +341,24 @@ class POSController extends Controller
                     'invoiceNumber' => $sale->invoice_number,
                     'dateTime'      => $sale->created_at->format('d M Y H:i'),
                     'customerName'  => $sale->customer?->name ?? 'Walk-in Customer',
-                    'total'         => $sale->total_amount,
+                    // H2: provide items, subtotal, discount, payments so pos_print.js
+                    // always has complete data (used for logging and future fallbacks)
+                    'items'    => $sale->items->map(fn ($i) => [
+                        'name'      => $i->product->name . ($i->variant ? ' (' . $i->variant->name . ')' : ''),
+                        'qty'       => $i->quantity,
+                        'unitPrice' => $i->unit_price,
+                        'lineTotal' => $i->quantity * $i->unit_price - $i->discount,
+                    ])->values(),
+                    'subtotal' => (int) $sale->items->sum('subtotal'),
+                    'discount' => (int) $sale->items->sum('discount'),
+                    'total'    => $sale->total_amount,
+                    'payments' => $sale->payments->map(fn ($p) => [
+                        'method' => $p->payment_method,
+                        'amount' => $p->amount,
+                    ])->values(),
+                    // M3: formatted_receipt lives here only — duplicate top-level key removed
                     'formatted_receipt' => $receiptFormatter->format($sale),
                 ],
-                'formatted_receipt' => $receiptFormatter->format($sale),
             ]);
 
         } catch (\Exception $e) {

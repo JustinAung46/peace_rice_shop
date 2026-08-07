@@ -29,11 +29,21 @@
         {{-- Receipt Info --}}
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
             <h2 class="font-semibold text-slate-700 mb-4 border-b border-slate-100 pb-3">Receipt Details</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">Received Date <span class="text-red-500">*</span></label>
                     <input type="date" name="received_date" value="{{ now()->format('Y-m-d') }}" required
                            class="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Delivery Rate (per full bag)</label>
+                    <div class="relative">
+                        <input type="number" name="delivery_rate" min="0" placeholder="0"
+                               class="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 pr-12">
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
+                            Ks
+                        </div>
+                    </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">Notes</label>
