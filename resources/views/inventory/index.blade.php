@@ -54,7 +54,7 @@
                 <div class="md:w-64 bg-slate-50/50 border-b md:border-b-0 md:border-r border-slate-100 p-6 flex flex-col items-center md:items-start text-center md:text-left">
                     <div class="relative mb-4 group">
                         @if($product->image_path)
-                            <img src="{{ $product->thumbnail_url }}" alt="{{ $product->name }}" class="w-24 h-24 object-cover rounded-lg shadow-sm border border-slate-200">
+                            <img src="{{ $product->thumbnail_url }}" alt="{{ $product->name }}" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 100 100\'%3E%3Crect width=\'100\' height=\'100\' fill=\'%23f3f4f6\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'14\' fill=\'%239ca3af\'%3ENo Image%3C/text%3E%3C/svg%3E'" class="w-24 h-24 object-cover rounded-lg shadow-sm border border-slate-200" width="96" height="96" loading="lazy">
                         @else
                             <div class="w-24 h-24 bg-slate-100 rounded-lg flex items-center justify-center border border-slate-200 text-slate-300">
                                 <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>

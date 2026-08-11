@@ -58,18 +58,22 @@ class InventoryController extends Controller
 
         if ($request->hasFile('image')) {
             $file = $request->file('image');
-            $data['image_path'] = $file->store('products', 'public');
             
             try {
                 $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
                 $img = $manager->read($file->getRealPath());
-                $img->cover(300, 300);
+                $img->scaleDown(width: 600, height: 600);
                 
-                $filename = basename($data['image_path']);
+                $filename = uniqid('product_', true) . '.webp';
+                $path = 'products/thumbnails/' . $filename;
+                
                 \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('products/thumbnails');
-                \Illuminate\Support\Facades\Storage::disk('public')->put('products/thumbnails/' . $filename, (string) $img->toJpeg(80));
+                \Illuminate\Support\Facades\Storage::disk('public')->put($path, (string) $img->toWebp(80));
+                
+                $data['image_path'] = $path;
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error('Thumbnail generation failed: ' . $e->getMessage());
+                $data['image_path'] = $file->store('products', 'public');
             }
         }
 
@@ -128,18 +132,22 @@ class InventoryController extends Controller
                 }
             }
             $file = $request->file('image');
-            $data['image_path'] = $file->store('products', 'public');
             
             try {
                 $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
                 $img = $manager->read($file->getRealPath());
-                $img->cover(300, 300);
+                $img->scaleDown(width: 600, height: 600);
                 
-                $filename = basename($data['image_path']);
+                $filename = uniqid('product_', true) . '.webp';
+                $path = 'products/thumbnails/' . $filename;
+                
                 \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('products/thumbnails');
-                \Illuminate\Support\Facades\Storage::disk('public')->put('products/thumbnails/' . $filename, (string) $img->toJpeg(80));
+                \Illuminate\Support\Facades\Storage::disk('public')->put($path, (string) $img->toWebp(80));
+                
+                $data['image_path'] = $path;
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error('Thumbnail generation failed: ' . $e->getMessage());
+                $data['image_path'] = $file->store('products', 'public');
             }
         }
 

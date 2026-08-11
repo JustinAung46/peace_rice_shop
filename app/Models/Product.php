@@ -29,22 +29,27 @@ class Product extends Model
             return '';
         }
 
-        // e.g. "products/my_image.jpg" -> "products/thumbnails/my_image.jpg"
+        // If the path already points to the optimized thumbnail, return it directly
+        // to avoid unnecessary disk checks.
+        if (str_contains($this->image_path, 'thumbnails/')) {
+            return asset('storage/' . $this->image_path);
+        }
+
+        // Fallback for old images that haven't been migrated yet.
+        // Try to find a thumbnail in the "thumbnails" subfolder.
         $pathParts = explode('/', $this->image_path);
         
         if (count($pathParts) >= 2) {
-            // The directory is usually the first part, like "products"
             $filename = array_pop($pathParts);
             $dir = implode('/', $pathParts);
             $thumbnailPath = $dir . '/thumbnails/' . $filename;
             
-            // Check if thumbnail exists
             if (\Illuminate\Support\Facades\Storage::disk('public')->exists($thumbnailPath)) {
                 return asset('storage/' . $thumbnailPath);
             }
         }
         
-        // Fallback to original image
+        // Final fallback to the original image
         return asset('storage/' . $this->image_path);
     }
 

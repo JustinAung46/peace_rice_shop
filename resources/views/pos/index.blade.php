@@ -61,7 +61,7 @@
 
                     <div class="h-28 bg-slate-50 rounded-xl mb-3 flex items-center justify-center text-slate-300 group-hover:bg-slate-100 transition-colors overflow-hidden">
                         @if($product->image_path)
-                            <img src="{{ $product->thumbnail_url }}" class="h-full w-full object-cover" loading="lazy" width="200" height="200">
+                            <img src="{{ $product->thumbnail_url }}" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\' viewBox=\'0 0 200 200\'%3E%3Crect width=\'200\' height=\'200\' fill=\'%23f3f4f6\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'24\' fill=\'%239ca3af\'%3ENo Image%3C/text%3E%3C/svg%3E'" class="h-full w-full object-cover" loading="lazy" width="200" height="200">
                         @else
                             <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
                         @endif
