@@ -18,7 +18,7 @@
             </div>
             <div>
                 <label class="block text-base font-bold text-slate-700 mb-2">Category <span class="text-slate-400 text-xs">(Optional)</span></label>
-                <select name="category_id" class="w-full px-4 py-3 text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <select name="category_id"required class="w-full px-4 py-3 text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                     <option value="">Select Category</option>
                     @foreach($categories as $category)
                         <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>

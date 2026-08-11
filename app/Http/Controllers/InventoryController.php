@@ -38,7 +38,7 @@ class InventoryController extends Controller
     {
         $request->validate([
             'name'            => 'required|string|max:255',
-            'category_id'     => 'nullable|exists:categories,id',
+            'category_id'     => 'required|exists:categories,id',
             'description'     => 'nullable|string',
             'image'           => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:20480',
             // Variants array
@@ -47,7 +47,7 @@ class InventoryController extends Controller
             'variants.*.unit_label'  => 'required|string|max:50',
             'variants.*.selling_price' => 'required|integer|min:0',
             'variants.*.sku'               => 'nullable|string|distinct',
-            'variants.*.bag_factor'        => 'nullable|numeric|min:0',
+            'variants.*.bag_factor'        => 'required|numeric|min:0',
             'variants.*.retail_price'      => 'nullable|integer|min:0',
             'variants.*.is_active'         => 'nullable|boolean',
             'is_active'                    => 'nullable|boolean',

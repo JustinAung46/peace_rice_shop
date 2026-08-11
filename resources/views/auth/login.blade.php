@@ -10,7 +10,7 @@
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
-            overflow: hidden;
+            overflow-y: auto;
             -webkit-tap-highlight-color: transparent;
             /* Animated Gradient Background */
             background: linear-gradient(-45deg, #ecfdf5, #d1fae5, #f0fdf4, #e0f2fe);
@@ -47,30 +47,69 @@
             border-radius: 2rem;
             box-shadow: 0 25px 50px -12px rgba(16, 185, 129, 0.15); /* Emerald tinted shadow */
             overflow: hidden;
-            height: 90vh;
-            max-height: 600px;
+            min-height: 600px;
+            max-height: 90vh;
             opacity: 0;
             animation: fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
         /* Fallback for portrait */
-        @media (max-width: 640px) and (orientation: portrait) {
+        @media (max-width: 900px) {
+            .app-container {
+                padding: 1rem;
+            }
             .login-card {
                 flex-direction: column;
-                height: 100vh;
                 max-height: none;
-                border-radius: 0;
+                border-radius: 1.5rem;
+                min-height: auto;
+            }
+            .left-panel,
+            .right-panel {
+                padding: 2rem 1.25rem;
             }
             .left-panel {
-                padding: 2rem 1.5rem !important;
-                flex: none !important;
+                align-items: stretch;
             }
             .right-panel {
-                padding: 2rem 1.5rem !important;
+                border-left: none;
+                border-top: 1px solid #f4f4f5;
             }
             .numpad-btn {
                 width: 70px !important;
                 height: 70px !important;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .login-card {
+                border-radius: 1rem;
+            }
+            .left-panel,
+            .right-panel {
+                padding: 1.5rem 1rem;
+            }
+            .left-panel {
+                padding-bottom: 1rem;
+            }
+            .right-panel {
+                padding-top: 1rem;
+            }
+            .numpad-btn {
+                width: 60px !important;
+                height: 60px !important;
+            }
+            .pin-display {
+                font-size: 1.75rem;
+            }
+            .left-panel .text-3xl {
+                font-size: 2rem;
+            }
+            .left-panel .text-lg {
+                font-size: 0.95rem;
+            }
+            .login-card {
+                min-height: auto;
             }
         }
 
