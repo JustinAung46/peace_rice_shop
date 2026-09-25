@@ -30,19 +30,6 @@
         </div>
     </div>
 
-    {{-- Alert Messages --}}
-    @if(session('success'))
-        <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg flex items-center gap-2">
-            <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            {{ session('success') }}
-        </div>
-    @endif
-    @if($errors->any())
-        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            @foreach($errors->all() as $error) <p>{{ $error }}</p> @endforeach
-        </div>
-    @endif
-
     {{-- Customer Summary Card --}}
     <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-wrap gap-6 items-center">
         <div class="flex-1 min-w-[180px]">
@@ -157,6 +144,7 @@
                 <thead>
                     <tr class="bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
                         <th class="text-left px-5 py-3 font-semibold">Date &amp; Time</th>
+                        <th class="text-left px-5 py-3 font-semibold">Method</th>
                         <th class="text-left px-5 py-3 font-semibold">Note</th>
                         <th class="text-left px-5 py-3 font-semibold">Allocated To</th>
                         <th class="text-right px-5 py-3 font-semibold">Payment Amount</th>
@@ -169,6 +157,11 @@
                     @foreach($payments as $payment)
                     <tr class="hover:bg-slate-50 transition-colors">
                         <td class="px-5 py-3.5 text-slate-500 whitespace-nowrap">{{ $payment->created_at->format('d M Y, h:i A') }}</td>
+                        <td class="px-5 py-3.5">
+                            <span class="text-xs font-semibold px-2 py-1 rounded-full {{ $payment->payment_method === 'Kpay' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100' }}">
+                                {{ $payment->payment_method }}
+                            </span>
+                        </td>
                         <td class="px-5 py-3.5 text-slate-600">
                             {{ $payment->note ?: '-' }}
                             @if($payment->original_amount && $payment->original_amount !== $payment->amount)
@@ -196,7 +189,7 @@
                         <td class="px-5 py-3.5 text-center">
                             <div class="flex items-center justify-center gap-2">
                                 <button
-                                    onclick="openEditModal({{ $payment->id }}, {{ $payment->amount }}, '{{ addslashes($payment->note ?? '') }}')"
+                                    onclick="openEditModal({{ $payment->id }}, {{ $payment->amount }}, '{{ $payment->payment_method }}', '{{ addslashes($payment->note ?? '') }}')"
                                     class="inline-flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-2.5 py-1.5 rounded-md hover:bg-indigo-100 transition-colors font-medium">
                                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                     Edit
@@ -248,6 +241,14 @@
             </div>
 
             <div>
+                <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Received By</label>
+                <select name="payment_method" required class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none bg-white">
+                    <option value="Cash">Cash</option>
+                    <option value="Kpay">KPay</option>
+                </select>
+            </div>
+
+            <div>
                 <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Note (optional)</label>
                 <input type="text" name="note"
                     class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
@@ -288,6 +289,14 @@
                 <input type="number" name="amount" id="edit_amount" min="1" required
                     class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-lg font-semibold focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                     placeholder="Enter corrected amount">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Received By</label>
+                <select name="payment_method" id="edit_payment_method" required class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-white">
+                    <option value="Cash">Cash</option>
+                    <option value="Kpay">KPay</option>
+                </select>
             </div>
 
             <div>
@@ -360,9 +369,10 @@ document.getElementById('payModal').addEventListener('click', function(e) {
 });
 
 // --- Edit Modal ---
-function openEditModal(paymentId, amount, note) {
+function openEditModal(paymentId, amount, paymentMethod, note) {
     document.getElementById('editForm').action = '/credits/payment/' + paymentId;
     document.getElementById('edit_amount').value = amount;
+    document.getElementById('edit_payment_method').value = paymentMethod;
     document.getElementById('edit_note').value = note;
     document.getElementById('editModal').classList.remove('hidden');
 }

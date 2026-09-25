@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class CreditPayment extends Model
 {
-    protected $fillable = ['customer_id', 'amount', 'original_amount', 'note', 'updated_by'];
+    protected $fillable = ['customer_id', 'amount', 'original_amount', 'payment_method', 'note', 'updated_by'];
 
     public function customer()
     {

@@ -103,6 +103,7 @@ class CreditController extends Controller
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'amount'      => 'required|integer|min:1',
+            'payment_method' => 'required|in:Cash,Kpay',
             'note'        => 'nullable|string|max:500',
             'sale_id'     => 'nullable|exists:sales,id',
         ]);
@@ -119,6 +120,7 @@ class CreditController extends Controller
                 'customer_id'     => $validated['customer_id'],
                 'amount'          => $validated['amount'],
                 'original_amount' => $validated['amount'], // Store original — never changes
+                'payment_method'  => $validated['payment_method'],
                 'note'            => $validated['note'] ?? null,
             ]);
 
@@ -181,7 +183,7 @@ class CreditController extends Controller
             return back()->withErrors(['amount' => 'Failed to record payment: ' . $e->getMessage()])->withInput();
         }
 
-        return redirect()->route('credits.index')
+        return back()
             ->with('success', 'Payment of ' . number_format($validated['amount']) . ' Ks recorded for ' . $customer->name . '.');
     }
 
@@ -192,8 +194,9 @@ class CreditController extends Controller
     {
         // Authorization handled by can:admin middleware on this route
         $validated = $request->validate([
-            'amount' => 'required|integer|min:1',
-            'note'   => 'nullable|string|max:500',
+            'amount'         => 'required|integer|min:1',
+            'payment_method' => 'required|in:Cash,Kpay',
+            'note'           => 'nullable|string|max:500',
         ]);
 
         $customer = Customer::findOrFail($payment->customer_id);
@@ -233,9 +236,10 @@ class CreditController extends Controller
 
             // Step 4: Update the payment record
             $payment->update([
-                'amount'     => $validated['amount'],
-                'note'       => $validated['note'] ?? null,
-                'updated_by' => Auth::id(),
+                'amount'         => $validated['amount'],
+                'payment_method' => $validated['payment_method'],
+                'note'           => $validated['note'] ?? null,
+                'updated_by'     => Auth::id(),
             ]);
 
             // Step 5: Re-apply FIFO allocations with new amount
@@ -353,6 +357,27 @@ class CreditController extends Controller
 
         return redirect()->route('credits.history', $customer)
             ->with('success', 'Payment of ' . number_format($oldAmount) . ' Ks has been deleted and the customer\'s balance has been restored.');
+    }
+
+    /**
+     * Daily credit collections, shown separately from sales revenue.
+     */
+    public function collections(Request $request)
+    {
+        $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
+        $endDate = $request->input('end_date', now()->toDateString());
+
+        $collections = CreditPayment::whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
+            ->selectRaw("DATE(created_at) as date,
+                         SUM(CASE WHEN LOWER(payment_method) = 'cash' THEN amount ELSE 0 END) as cash,
+                         SUM(CASE WHEN LOWER(payment_method) = 'kpay' THEN amount ELSE 0 END) as kpay,
+                         SUM(amount) as total")
+            ->groupBy('date')
+            ->orderByDesc('date')
+            ->get();
+
+        return view('credits.collections', compact('collections', 'startDate', 'endDate'));
     }
 
     /**

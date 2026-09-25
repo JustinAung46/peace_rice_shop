@@ -192,11 +192,24 @@ class POSController extends Controller
             'cart.*.discount'            => 'nullable|integer|min:0',
             'cart.*.warehouse_id'        => 'required|exists:warehouses,id',
             'payments'                   => 'required|array|min:1',
-            'payments.*.method'          => 'required|string',
+            'payments.*.method'          => 'required|in:Cash,Kpay,Credit',
             'payments.*.amount'          => 'required|integer|min:0',
             'customer_id'                => 'nullable|exists:customers,id',
             'sale_type'                  => 'nullable|in:retail,wholesale',
         ]);
+
+        $cartTotal = collect($request->cart)->sum(function ($item) {
+            return ((int) $item['unit_price'] * (int) $item['quantity']) - (int) ($item['discount'] ?? 0);
+        });
+        $paymentTotal = collect($request->payments)->sum(fn ($payment) => (int) $payment['amount']);
+
+        if ($cartTotal < 0) {
+            return response()->json(['success' => false, 'message' => 'Discounts cannot exceed the sale total.'], 422);
+        }
+
+        if ($paymentTotal !== $cartTotal) {
+            return response()->json(['success' => false, 'message' => 'Payments must equal the sale total.'], 422);
+        }
 
         // ── Pre-load all variants + products BEFORE the transaction ─────────────
         // This avoids N+1 queries inside the locked transaction window.
@@ -369,12 +382,23 @@ class POSController extends Controller
 
     public function cancel(Sale $sale)
     {
-        if ($sale->status === 'cancelled') {
-            return response()->json(['success' => false, 'message' => 'Sale is already cancelled.'], 400);
-        }
-
         try {
             DB::beginTransaction();
+
+            $sale = Sale::lockForUpdate()->findOrFail($sale->id);
+
+            if ($sale->status === 'cancelled') {
+                DB::rollBack();
+                return response()->json(['success' => false, 'message' => 'Sale is already cancelled.'], 400);
+            }
+
+            if ($sale->creditAllocations()->exists()) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This credit sale has recorded repayments and cannot be cancelled. Use the return/refund process instead.',
+                ], 422);
+            }
 
             // Restore Stock
             foreach ($sale->items as $item) {

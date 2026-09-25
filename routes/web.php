@@ -43,6 +43,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('pos/sales/{sale}/cancel', [POSController::class, 'cancel'])->name('pos.sales.cancel');
         Route::resource('customers', App\Http\Controllers\CustomerController::class);
         Route::get('credits', [CreditController::class, 'index'])->name('credits.index');
+        Route::get('credits/collections', [CreditController::class, 'collections'])->name('credits.collections');
         Route::get('credits/{customer}/history', [CreditController::class, 'history'])->name('credits.history');
         Route::post('credits/payment', [CreditController::class, 'storePayment'])->name('credits.payment.store');
     });
@@ -82,5 +83,4 @@ Route::middleware(['auth'])->group(function () {
             ->name('purchase-orders.payment.store');
     });
 });
-
 

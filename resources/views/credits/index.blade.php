@@ -9,20 +9,10 @@
             <h1 class="text-2xl font-bold text-slate-800">Credit Report</h1>
             <p class="text-slate-500 text-sm mt-1">All credit sales and outstanding balances</p>
         </div>
+        <a href="{{ route('credits.collections') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors">
+            Daily Collections
+        </a>
     </div>
-
-    {{-- Alert Messages --}}
-    @if(session('success'))
-        <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg flex items-center gap-2">
-            <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            {{ session('success') }}
-        </div>
-    @endif
-    @if($errors->any())
-        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            @foreach($errors->all() as $error) <p>{{ $error }}</p> @endforeach
-        </div>
-    @endif
 
     {{-- Outstanding Balance Cards --}}
     @if($customersWithBalance->count())
@@ -33,13 +23,13 @@
         </h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             @foreach($customersWithBalance as $c)
-            <div class="flex items-center justify-between bg-amber-50 border border-amber-100 rounded-lg px-4 py-3">
+            <div class="flex items-center justify-between bg-white/30 backdrop-blur-lg border border-white/20 rounded-xl px-4 py-3 shadow-lg" style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px);">
                 <div>
                     <p class="font-semibold text-slate-800">{{ $c->name }}</p>
                     @if($c->phone)<p class="text-xs text-slate-500">{{ $c->phone }}</p>@endif
                 </div>
                 <div class="text-right">
-                    <p class="text-lg font-bold text-red-600">{{ number_format($c->credit_balance) }} Ks</p>
+                    <p class="text-lg font-bold text-red-600"><span class="count" data-target="{{ $c->credit_balance }}">0</span> Ks</p>
                     <div class="flex gap-1 mt-1 justify-end">
                         <button onclick="openPayModal({{ $c->id }}, '{{ addslashes($c->name) }}', {{ $c->credit_balance }})"
                             class="text-xs bg-emerald-600 text-white px-2 py-1 rounded-md hover:bg-emerald-700 transition-colors">
@@ -205,6 +195,14 @@
             </div>
 
             <div>
+                <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Received By</label>
+                <select name="payment_method" required class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none bg-white">
+                    <option value="Cash">Cash</option>
+                    <option value="Kpay">KPay</option>
+                </select>
+            </div>
+
+            <div>
                 <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Note (optional)</label>
                 <input type="text" name="note"
                     class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
@@ -232,6 +230,28 @@ function closePayModal() {
 }
 document.getElementById('payModal').addEventListener('click', function(e) {
     if (e.target === this) closePayModal();
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const counters = document.querySelectorAll('.count');
+  counters.forEach(counter => {
+    const target = parseInt(counter.dataset.target.replace(/[^0-9]/g, ''), 10) || 0;
+    const duration = 2000; // animation duration in ms
+    const startTime = performance.now();
+    const animate = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const current = Math.floor(progress * target);
+      counter.textContent = current.toLocaleString();
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        counter.textContent = target.toLocaleString();
+      }
+    };
+    requestAnimationFrame(animate);
+  });
 });
 </script>
 @endsection

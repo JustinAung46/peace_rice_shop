@@ -83,7 +83,7 @@
     <!-- Cart (Right) -->
     <div class="w-full lg:w-80 max-w-full bg-white rounded-xl shadow-lg border border-slate-200 flex flex-col overflow-hidden order-3 lg:order-2 min-w-0 lg:h-[calc(100vh-8rem)] lg:max-h-[calc(100vh-8rem)]">
         <div class="p-4 border-b border-slate-100 bg-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <h2 class="text-lg font-bold text-slate-800 flex items-center">
+            <h2 class="text-md font-bold text-slate-800 flex items-center">
                 <svg class="w-5 h-5 mr-2 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
                 Current Order
             </h2>

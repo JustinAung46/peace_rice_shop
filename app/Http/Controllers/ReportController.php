@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Sale;
+use App\Models\CreditPayment;
 use App\Models\SaleItem;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -50,12 +51,70 @@ class ReportController extends Controller
             ->orderBy('date', 'desc')
             ->get();
 
-        $dailyStats->map(function ($stat) {
+        // Payments are aggregated separately from sale items. Joining payments directly
+        // to sale items would count a payment once for every item in its sale.
+        $dailyPayments = Sale::join('sale_payments', 'sales.id', '=', 'sale_payments.sale_id')
+            ->where('sales.status', '!=', 'cancelled')
+            ->whereDate('sales.created_at', '>=', $startDate)
+            ->whereDate('sales.created_at', '<=', $endDate)
+            ->selectRaw("DATE(sales.created_at) as date,
+                         SUM(CASE WHEN LOWER(sale_payments.payment_method) = 'cash' THEN sale_payments.amount ELSE 0 END) as cash,
+                         SUM(CASE WHEN LOWER(sale_payments.payment_method) = 'kpay' THEN sale_payments.amount ELSE 0 END) as kpay,
+                         SUM(CASE WHEN LOWER(sale_payments.payment_method) = 'credit' THEN sale_payments.amount ELSE 0 END) as credit")
+            ->groupBy('date')
+            ->get()
+            ->keyBy('date');
+
+        $dailyCollections = CreditPayment::whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
+            ->selectRaw("DATE(created_at) as date,
+                         SUM(CASE WHEN LOWER(payment_method) = 'cash' THEN amount ELSE 0 END) as collection_cash,
+                         SUM(CASE WHEN LOWER(payment_method) = 'kpay' THEN amount ELSE 0 END) as collection_kpay")
+            ->groupBy('date')
+            ->get()
+            ->keyBy('date');
+
+        $dailyStats->map(function ($stat) use ($dailyPayments, $dailyCollections) {
             $stat->profit = $stat->revenue - $stat->total_cost;
+            $payments = $dailyPayments->get($stat->date);
+            $collections = $dailyCollections->get($stat->date);
+            $stat->cash = $payments->cash ?? 0;
+            $stat->kpay = $payments->kpay ?? 0;
+            $stat->credit = $payments->credit ?? 0;
+            $stat->credit_collected = ($collections->collection_cash ?? 0) + ($collections->collection_kpay ?? 0);
+            $stat->money_received = $stat->cash + $stat->kpay + $stat->credit_collected;
+
             return $stat;
         });
 
-        return view('reports.daily', compact('dailyStats', 'startDate', 'endDate'));
+        // Include a day where the shop received a credit repayment but made no sale.
+        $dailyStatsByDate = $dailyStats->keyBy('date');
+        foreach ($dailyCollections as $date => $collections) {
+            if ($dailyStatsByDate->has($date)) {
+                continue;
+            }
+
+            $creditCollected = $collections->collection_cash + $collections->collection_kpay;
+            $dailyStatsByDate->put($date, (object) [
+                'date' => $date,
+                'transaction_count' => 0,
+                'revenue' => 0,
+                'cash' => 0,
+                'kpay' => 0,
+                'credit' => 0,
+                'credit_collected' => $creditCollected,
+                'money_received' => $creditCollected,
+                'total_cost' => 0,
+                'profit' => 0,
+            ]);
+        }
+
+        $dailyStats = $dailyStatsByDate->sortByDesc('date')->values();
+        $cashReceived = $dailyStats->sum('cash') + $dailyCollections->sum('collection_cash');
+        $kpayReceived = $dailyStats->sum('kpay') + $dailyCollections->sum('collection_kpay');
+        $totalReceived = $cashReceived + $kpayReceived;
+
+        return view('reports.daily', compact('dailyStats', 'startDate', 'endDate', 'cashReceived', 'kpayReceived', 'totalReceived'));
     }
 
     public function saleItemsReport(Request $request)
