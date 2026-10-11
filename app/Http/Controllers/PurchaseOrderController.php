@@ -44,13 +44,31 @@ class PurchaseOrderController extends Controller
         $orders    = $query->paginate(20)->withQueryString();
         $suppliers = Supplier::orderBy('name')->get();
 
-        // Summary cards
+        // Summary cards have their own date range, so filtering their totals does
+        // not change the orders displayed in the table below.
+        $summaryQuery = PurchaseOrder::query();
+
+        if ($request->filled('summary_date_from')) {
+            $summaryQuery->whereDate('order_date', '>=', $request->summary_date_from);
+        }
+        if ($request->filled('summary_date_to')) {
+            $summaryQuery->whereDate('order_date', '<=', $request->summary_date_to);
+        }
+
+        $summaryTotals = $summaryQuery->selectRaw(
+            'COUNT(*) as total_orders,
+             SUM(CASE WHEN receive_status != ? THEN 1 ELSE 0 END) as pending_receive,
+             COALESCE(SUM(total_cost), 0) as total_cost,
+             COALESCE(SUM(amount_paid), 0) as total_paid',
+            ['received']
+        )->first();
+
         $summary = [
-            'total_orders'    => PurchaseOrder::count(),
-            'pending_receive' => PurchaseOrder::where('receive_status', '!=', 'received')->count(),
-            'total_cost'      => PurchaseOrder::sum('total_cost'),
-            'total_paid'      => PurchaseOrder::sum('amount_paid'),
-            'total_remaining' => PurchaseOrder::selectRaw('SUM(total_cost - amount_paid)')->value(DB::raw('SUM(total_cost - amount_paid)')) ?? 0,
+            'total_orders'    => $summaryTotals->total_orders,
+            'pending_receive' => $summaryTotals->pending_receive,
+            'total_cost'      => $summaryTotals->total_cost,
+            'total_paid'      => $summaryTotals->total_paid,
+            'total_remaining' => $summaryTotals->total_cost - $summaryTotals->total_paid,
         ];
 
         return view('purchase-orders.index', compact('orders', 'suppliers', 'summary'));
@@ -61,14 +79,19 @@ class PurchaseOrderController extends Controller
     public function create()
     {
         $suppliers  = Supplier::orderBy('name')->get();
-        $products   = Product::with('variants')->orderBy('name')->get();
+        $products   = Product::with(['variants' => fn ($q) => $q->where('is_active', true)->orderBy('id')])
+                             ->where('is_active', true)
+                             ->orderBy('id')
+                             ->get();
         $warehouses = Warehouse::orderBy('name')->get();
+        $categories = \App\Models\Category::where('is_active', true)->orderBy('id')->get();
 
         $productsJson = json_encode(
             $products->map(fn ($p) => [
-                'id'       => $p->id,
-                'name'     => $p->name,
-                'variants' => $p->variants->map(fn ($v) => [
+                'id'          => $p->id,
+                'name'        => $p->name,
+                'category_id' => $p->category_id,
+                'variants'    => $p->variants->map(fn ($v) => [
                     'id'         => $v->id,
                     'name'       => $v->name,
                     'unit_label' => $v->unit_label,
@@ -76,7 +99,7 @@ class PurchaseOrderController extends Controller
             ])->values()->toArray()
         );
 
-        return view('purchase-orders.create', compact('suppliers', 'products', 'warehouses', 'productsJson'));
+        return view('purchase-orders.create', compact('suppliers', 'products', 'warehouses', 'productsJson', 'categories'));
     }
 
     // ─── Store ────────────────────────────────────────────────────────────────

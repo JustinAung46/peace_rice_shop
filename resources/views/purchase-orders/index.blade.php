@@ -17,6 +17,26 @@
     </div>
 
     {{-- Summary Cards --}}
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+        <form method="GET" class="flex flex-wrap gap-3 items-end">
+            @foreach(request()->only(['supplier_id', 'receive_status', 'payment_status', 'date_from', 'date_to']) as $key => $value)
+                <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+            @endforeach
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Summary From</label>
+                <input type="date" name="summary_date_from" value="{{ request('summary_date_from') }}"
+                       class="border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Summary To</label>
+                <input type="date" name="summary_date_to" value="{{ request('summary_date_to') }}"
+                       class="border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2 rounded-xl text-sm transition-colors">Apply to Cards</button>
+            <a href="{{ route('purchase-orders.index', request()->only(['supplier_id', 'receive_status', 'payment_status', 'date_from', 'date_to'])) }}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-5 py-2 rounded-xl text-sm transition-colors">Clear</a>
+        </form>
+    </div>
+
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
             <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Orders</p>
@@ -36,50 +56,146 @@
         </div>
     </div>
 
-    {{-- Filters --}}
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-        <form method="GET" class="flex flex-wrap gap-3 items-end">
-            <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1">Supplier</label>
-                <select name="supplier_id" class="border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <option value="">All Suppliers</option>
-                    @foreach($suppliers as $sup)
-                    <option value="{{ $sup->id }}" {{ request('supplier_id') == $sup->id ? 'selected' : '' }}>{{ $sup->name }}</option>
-                    @endforeach
-                </select>
+    @if((request()->filled('summary_date_from') || request()->filled('summary_date_to')) && $summary['total_orders'] === 0)
+        <p class="text-sm text-slate-500 -mt-2">No purchase orders fall within the selected summary period.</p>
+    @endif
+
+{{-- Filters --}}
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+    <form method="GET" class="flex flex-wrap items-center gap-3">
+
+        {{-- Keep summary date filters --}}
+        @foreach(request()->only(['summary_date_from', 'summary_date_to']) as $key => $value)
+            <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+        @endforeach
+
+        {{-- Supplier --}}
+        <div class="w-44">
+            <label for="supplier_id" class="block text-xs font-medium text-slate-500 mb-1.5">
+                Supplier
+            </label>
+            <select
+                id="supplier_id"
+                name="supplier_id"
+                class="w-full h-10 border border-slate-200 rounded-2xl px-3 text-sm bg-slate-50
+                       focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            >
+                <option value="">All Suppliers</option>
+                @foreach($suppliers as $sup)
+                    <option value="{{ $sup->id }}"
+                        {{ request('supplier_id') == $sup->id ? 'selected' : '' }}>
+                        {{ $sup->name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        {{-- Receiving Status --}}
+        <div class="w-42">
+            <label for="receive_status" class="block text-xs font-medium text-slate-500 mb-1.5">
+                Receiving
+            </label>
+            <select
+                id="receive_status"
+                name="receive_status"
+                class="w-full h-10 border border-slate-200 rounded-2xl px-3 text-sm bg-slate-50
+                       focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                <option value="">All</option>
+                <option value="pending" {{ request('receive_status') == 'pending' ? 'selected' : '' }}>
+                    Pending
+                </option>
+                <option value="partial" {{ request('receive_status') == 'partial' ? 'selected' : '' }}>
+                    Partial
+                </option>
+                <option value="received" {{ request('receive_status') == 'received' ? 'selected' : '' }}>
+                    Received
+                </option>
+            </select>
+        </div>
+
+        {{-- Payment Status --}}
+        <div class="w-42">
+            <label for="payment_status" class="block text-xs font-medium text-slate-500 mb-1.5">
+                Payment
+            </label>
+            <select
+                id="payment_status"
+                name="payment_status"
+                class="w-full h-10 border border-slate-200 rounded-2xl px-3 text-sm bg-slate-50
+                       focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            >
+                <option value="">All</option>
+                <option value="unpaid" {{ request('payment_status') == 'unpaid' ? 'selected' : '' }}>
+                    Unpaid
+                </option>
+                <option value="partial" {{ request('payment_status') == 'partial' ? 'selected' : '' }}>
+                    Partial
+                </option>
+                <option value="paid" {{ request('payment_status') == 'paid' ? 'selected' : '' }}>
+                    Paid
+                </option>
+            </select>
+        </div>
+
+        {{-- Date Range --}}
+        <div>
+            <label class="block text-xs font-medium text-slate-500 mb-1.5">
+                Order Date
+            </label>
+
+            <div class="flex items-center gap-2">
+                <input
+                    id="date_from"
+                    type="date"
+                    name="date_from"
+                    value="{{ request('date_from') }}"
+                    class="w-36 h-10 border border-slate-200 rounded-lg px-3 text-sm bg-slate-50
+                           focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+
+                <span class="text-slate-400 text-sm">to</span>
+
+                <input
+                    id="date_to"
+                    type="date"
+                    name="date_to"
+                    value="{{ request('date_to') }}"
+                    class="w-36 h-10 border border-slate-200 rounded-lg px-3 text-sm bg-slate-50
+                           focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                >
             </div>
-            <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1">Receive Status</label>
-                <select name="receive_status" class="border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <option value="">All</option>
-                    <option value="pending" {{ request('receive_status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                    <option value="partial" {{ request('receive_status') == 'partial' ? 'selected' : '' }}>Partial</option>
-                    <option value="received" {{ request('receive_status') == 'received' ? 'selected' : '' }}>Received</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1">Payment Status</label>
-                <select name="payment_status" class="border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <option value="">All</option>
-                    <option value="unpaid" {{ request('payment_status') == 'unpaid' ? 'selected' : '' }}>Unpaid</option>
-                    <option value="partial" {{ request('payment_status') == 'partial' ? 'selected' : '' }}>Partial</option>
-                    <option value="paid" {{ request('payment_status') == 'paid' ? 'selected' : '' }}>Paid</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1">From</label>
-                <input type="date" name="date_from" value="{{ request('date_from') }}"
-                       class="border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            </div>
-            <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1">To</label>
-                <input type="date" name="date_to" value="{{ request('date_to') }}"
-                       class="border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            </div>
-            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2 rounded-xl text-sm transition-colors">Filter</button>
-            <a href="{{ route('purchase-orders.index') }}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-5 py-2 rounded-xl text-sm transition-colors">Reset</a>
-        </form>
-    </div>
+        </div>
+
+        {{-- Actions --}}
+        <div class="flex items-end gap-2 h-full pt-5">
+            <button
+                type="submit"
+                class="h-10 px-4 bg-indigo-600 hover:bg-indigo-700 text-white
+                       font-medium text-sm rounded-lg transition-colors shadow-sm"
+            >
+                Filter
+            </button>
+
+            <a
+                href="{{ route('purchase-orders.index', request()->only(['summary_date_from', 'summary_date_to'])) }}"
+                class="h-10 px-3 flex items-center justify-center
+                       text-slate-500 hover:text-slate-800
+                       rounded-lg hover:bg-slate-100 transition-colors"
+                title="Clear filters"
+            >
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M4 4v5h.582m15.356 2A8 8 0 004.582 9
+                             m0 0H9m11 11v-5h-.581m0 0a8.003 8.003
+                             0 01-15.357-2m15.357 2H15"/>
+                </svg>
+            </a>
+        </div>
+
+    </form>
+</div>
 
     {{-- Orders Table --}}
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
